@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}My Subscription — LiveStream Felix{% endblock %}
+
+{% block content %}
+<div class="lsf-page-header">
+  <h1 class="lsf-page-title">My Subscription</h1>
+  <p class="lsf-page-sub">Manage your plan and billing history</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:24px;max-width:1000px;">
+
+  <!-- Current Plan -->
+  <div>
+    {% if subscription %}
+    <div class="lsf-card lsf-mb-24" style="background:linear-gradient(135deg,rgba(91,110,245,0.1),rgba(0,212,255,0.05));border-color:rgba(91,110,245,0.3);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Current Plan</div>
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--text-1);">{{ subscription.plan.name }}</div>
+          {% if subscription.country %}
+          <div style="font-size:13px;color:var(--text-3);margin-top:4px;">{{ subscription.country.flag_emoji }} {{ subscription.country.name }} · {{ subscription.country.currency_code }}</div>
+          {% endif %}
+        </div>
+        <div>
+          {% if subscription.is_active %}
+          <span class="lsf-status lsf-status-active" style="font-size:13px;padding:6px 14px;">Active</span>
+          {% else %}
+          <span class="lsf-status lsf-status-ended" style="font-size:13px;padding:6px 14px;">{{ subscription.get_status_display }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Usage Stats -->
+      <div class="lsf-grid-3" style="margin-bottom:20px;">
+        <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-md);padding:14px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--cyan);">{{ subscription.meetings_this_month }}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Meetings this month</div>
+          {% if subscription.plan.max_meetings_per_month < 9999 %}
+          <div style="font-size:10px;color:var(--text-4);">of {{ subscription.plan.max_meetings_per_month }}</div>
+          {% endif %}
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-md);padding:14px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--green);">{{ subscription.minutes_this_month }}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Minutes used</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-md);padding:14px;text-align:center;">
+          <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--indigo);">{{ subscription.plan.max_participants }}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px;">Max participants</div>
+        </div>
+      </div>
+
+      {% if subscription.expires_at %}
+      <div style="background:rgba(0,0,0,0.2);border-radius:var(--radius-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text-3);"><i class="fa-solid fa-calendar" style="margin-right:6px;"></i>
+          {% if subscription.is_active %}Renews{% else %}Expired{% endif %} on {{ subscription.expires_at|date:"F d, Y" }}
+        </span>
+        {% if subscription.status == 'active' %}
+        <form method="POST" action="{% url 'billing:cancel' %}" onsubmit="return confirm('Cancel your subscription? You can still use the plan until it expires.');">
+          {% csrf_token %}
+          <button type="submit" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:600;">
+            <i class="fa-solid fa-times"></i> Cancel Plan
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Plan Features -->
+    <div class="lsf-card lsf-mb-24">
+      <div class="lsf-card-title lsf-mb-16">What's included in {{ subscription.plan.name }}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        {% with plan=subscription.plan %}
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);">
+          <i class="fa-solid fa-check" style="color:var(--green);"></i> {{ plan.max_participants }} participants
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);">
+          <i class="fa-solid fa-check" style="color:var(--green);"></i>
+          {% if plan.max_meeting_minutes >= 9999 %}Unlimited{% else %}{{ plan.max_meeting_minutes }} min{% endif %} meetings
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if plan.allow_recording %}var(--text-2){% else %}var(--text-4){% endif %};">
+          <i class="fa-solid {% if plan.allow_recording %}fa-check" style="color:var(--green){% else %}fa-xmark" style="color:var(--text-4){% endif %};"></i> Recording
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if plan.allow_polls %}var(--text-2){% else %}var(--text-4){% endif %};">
+          <i class="fa-solid {% if plan.allow_polls %}fa-check" style="color:var(--green){% else %}fa-xmark" style="color:var(--text-4){% endif %};"></i> Live Polls
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if plan.allow_whiteboard %}var(--text-2){% else %}var(--text-4){% endif %};">
+          <i class="fa-solid {% if plan.allow_whiteboard %}fa-check" style="color:var(--green){% else %}fa-xmark" style="color:var(--text-4){% endif %};"></i> Whiteboard
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if plan.allow_analytics %}var(--text-2){% else %}var(--text-4){% endif %};">
+          <i class="fa-solid {% if plan.allow_analytics %}fa-check" style="color:var(--green){% else %}fa-xmark" style="color:var(--text-4){% endif %};"></i> Analytics
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="lsf-card">
+      <div class="lsf-card-title lsf-mb-16"><i class="fa-solid fa-receipt" style="color:var(--text-3);margin-right:8px;"></i>Payment History</div>
+      {% if payments %}
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 0;font-size:12px;color:var(--text-4);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
+            <th style="text-align:left;padding:8px 0;font-size:12px;color:var(--text-4);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Plan</th>
+            <th style="text-align:right;padding:8px 0;font-size:12px;color:var(--text-4);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Amount</th>
+            <th style="text-align:center;padding:8px 0;font-size:12px;color:var(--text-4);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:12px 0;font-size:13px;color:var(--text-2);">{{ payment.created_at|date:"M d, Y" }}</td>
+            <td style="padding:12px 0;font-size:13px;color:var(--text-1);font-weight:500;">{{ payment.plan.name }}</td>
+            <td style="padding:12px 0;font-size:13px;color:var(--text-1);text-align:right;font-weight:600;">{{ payment.currency }} {{ payment.amount }}</td>
+            <td style="padding:12px 0;text-align:center;">
+              <span class="lsf-status lsf-status-{% if payment.status == 'successful' %}active{% else %}ended{% endif %}">{{ payment.status }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="text-align:center;padding:24px;color:var(--text-4);font-size:13px;">
+        <i class="fa-solid fa-receipt" style="font-size:28px;display:block;margin-bottom:8px;opacity:0.3;"></i>
+        No payments yet.
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <div class="lsf-card" style="text-align:center;padding:48px;">
+      <i class="fa-solid fa-crown" style="font-size:48px;color:var(--indigo);display:block;margin-bottom:16px;"></i>
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:8px;">No Active Subscription</div>
+      <p style="color:var(--text-3);margin-bottom:24px;">Choose a plan to unlock all features</p>
+      <a href="{% url 'billing:pricing' %}" class="lsf-btn lsf-btn-primary lsf-btn-lg">
+        <i class="fa-solid fa-crown"></i> View Plans
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Upgrade Options -->
+  <div>
+    <div class="lsf-card" style="background:linear-gradient(160deg,var(--bg-600),var(--bg-700));">
+      <div class="lsf-card-title lsf-mb-16">
+        {% if subscription and not subscription.plan.is_free %}Upgrade Your Plan{% else %}Unlock More Features{% endif %}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for plan in plans %}
+        {% if not subscription or subscription.plan.slug != plan.slug %}
+        <a href="{% url 'billing:checkout' plan.slug %}" style="background:var(--bg-500);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;display:flex;align-items:center;gap:12px;text-decoration:none;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--indigo)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="width:36px;height:36px;border-radius:8px;display:grid;place-items:center;font-size:15px;flex-shrink:0;background:{% if plan.slug == 'free' %}rgba(107,125,179,0.15){% elif plan.slug == 'starter' %}rgba(0,212,255,0.12){% elif plan.slug == 'pro' %}rgba(91,110,245,0.15){% else %}rgba(168,85,247,0.12){% endif %};color:{% if plan.slug == 'free' %}var(--text-3){% elif plan.slug == 'starter' %}var(--cyan){% elif plan.slug == 'pro' %}var(--indigo){% else %}var(--purple){% endif %};">
+            <i class="fa-solid {% if plan.slug == 'free' %}fa-gift{% elif plan.slug == 'starter' %}fa-rocket{% elif plan.slug == 'pro' %}fa-crown{% else %}fa-building{% endif %}"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text-1);">{{ plan.name }}</div>
+            <div style="font-size:12px;color:var(--text-3);">
+              {% if plan.is_free %}Free forever{% else %}${{ plan.price_usd }}/{{ plan.billing_cycle }}{% endif %}
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-4);font-size:12px;"></i>
+        </a>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div style="margin-top:16px;">
+        <a href="{% url 'billing:pricing' %}" class="lsf-btn lsf-btn-primary lsf-btn-full">
+          <i class="fa-solid fa-list"></i> Compare All Plans
+        </a>
+      </div>
+    </div>
+
+    <!-- Support -->
+    <div class="lsf-card lsf-mt-16">
+      <div class="lsf-card-title lsf-mb-12"><i class="fa-solid fa-headset" style="color:var(--cyan);margin-right:8px;"></i>Need Help?</div>
+      <p style="font-size:13px;color:var(--text-3);margin-bottom:14px;line-height:1.6;">Have billing questions or need to change your plan? Our support team is here to help.</p>
+      <a href="mailto:support@livestreamfelix.com" class="lsf-btn lsf-btn-secondary lsf-btn-full lsf-btn-sm">
+        <i class="fa-solid fa-envelope"></i> Contact Support
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

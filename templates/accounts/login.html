@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Sign In — LiveStream Felix{% endblock %}
+
+{% block auth_content %}
+<style>
+  .auth-wrap {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 520px;
+  }
+  .auth-hero {
+    background: linear-gradient(135deg, var(--bg-800) 0%, var(--bg-700) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-hero::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(91,110,245,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .auth-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    left: -5%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .auth-panel {
+    background: var(--bg-900);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 48px;
+    overflow-y: auto;
+  }
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  @media (max-width: 900px) {
+    .auth-wrap { grid-template-columns: 1fr; }
+    .auth-hero { display: none; }
+    .auth-panel { padding: 40px 24px; }
+  }
+</style>
+
+<div class="auth-wrap">
+  <!-- Hero Side -->
+  <div class="auth-hero">
+    <a href="/" class="lsf-logo" style="margin-bottom:48px;padding:0;border:none;">
+      <div class="lsf-logo-icon" style="width:44px;height:44px;font-size:20px;"><i class="fa-solid fa-video"></i></div>
+      <div class="lsf-logo-text" style="font-size:22px;">
+        LiveStream Felix
+        <span>Professional Video Platform</span>
+      </div>
+    </a>
+
+    <h2 style="font-family:var(--font-display);font-size:42px;font-weight:700;color:var(--text-1);line-height:1.2;margin-bottom:16px;">
+      Connect, Collaborate,<br><span style="background:linear-gradient(135deg,var(--indigo),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Create Together</span>
+    </h2>
+    <p style="font-size:17px;color:var(--text-3);margin-bottom:40px;line-height:1.6;">
+      Professional-grade video conferencing with real-time collaboration tools, HD quality, and enterprise features.
+    </p>
+
+    <div>
+      <div class="feature-item">
+        <div class="feature-icon" style="background:rgba(91,110,245,0.15);color:var(--indigo);"><i class="fa-solid fa-video"></i></div>
+        <div>
+          <div style="font-weight:600;color:var(--text-1);margin-bottom:3px;">HD Video Conferencing</div>
+          <div style="font-size:13px;color:var(--text-3);">Crystal-clear video with WebRTC technology, up to 100 participants</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon" style="background:rgba(0,212,255,0.12);color:var(--cyan);"><i class="fa-solid fa-comments"></i></div>
+        <div>
+          <div style="font-weight:600;color:var(--text-1);margin-bottom:3px;">Real-time Chat & Reactions</div>
+          <div style="font-size:13px;color:var(--text-3);">In-meeting messaging, file sharing, emoji reactions, and polls</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon" style="background:rgba(34,217,122,0.12);color:var(--green);"><i class="fa-solid fa-desktop"></i></div>
+        <div>
+          <div style="font-weight:600;color:var(--text-1);margin-bottom:3px;">Screen Sharing & Whiteboard</div>
+          <div style="font-size:13px;color:var(--text-3);">Share your screen, collaborate on a live whiteboard, annotate</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon" style="background:rgba(168,85,247,0.12);color:var(--purple);"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+          <div style="font-weight:600;color:var(--text-1);margin-bottom:3px;">Waiting Rooms & Security</div>
+          <div style="font-size:13px;color:var(--text-3);">Password protection, waiting rooms, and host controls</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Panel -->
+  <div class="auth-panel">
+    <div style="margin-bottom:36px;">
+      <h3 style="font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--text-1);margin-bottom:8px;">Welcome back</h3>
+      <p style="color:var(--text-3);font-size:15px;">Sign in to your LiveStream Felix account</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div style="background:rgba(255,78,106,0.1);border:1px solid rgba(255,78,106,0.3);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:20px;color:var(--red);font-size:14px;">
+        <i class="fa-solid fa-circle-exclamation" style="margin-right:8px;"></i>
+        {{ form.non_field_errors.0 }}
+      </div>
+    {% endif %}
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="lsf-form-group">
+        <label class="lsf-label">Username</label>
+        <input class="lsf-input" type="text" name="username" placeholder="Enter your username" autocomplete="username" value="{{ form.username.value|default:'' }}">
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Password</label>
+        <div style="position:relative;">
+          <input class="lsf-input" type="password" name="password" placeholder="Enter your password" id="pwdInput" autocomplete="current-password" style="padding-right:44px;">
+          <button type="button" onclick="togglePwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer;font-size:14px;">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="lsf-btn lsf-btn-primary lsf-btn-full lsf-btn-lg" style="margin-top:8px;">
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+      </button>
+    </form>
+
+    <div style="margin-top:28px;text-align:center;">
+      <p style="color:var(--text-3);font-size:14px;">
+        Don't have an account?
+        <a href="{% url 'accounts:register' %}" style="color:var(--indigo);font-weight:600;text-decoration:none;">Create Account</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function togglePwd() {
+    const input = document.getElementById('pwdInput');
+    const icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fa-solid fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fa-solid fa-eye';
+    }
+  }
+</script>
+{% endblock %}

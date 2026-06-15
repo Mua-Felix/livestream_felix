@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LiveStream Felix{% endblock %}</title>
+  <!-- PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LiveStream Felix">
+  <meta name="application-name" content="LiveStream Felix">
+  <meta name="theme-color" content="#5b6ef5">
+  <meta name="msapplication-TileColor" content="#5b6ef5">
+  <meta name="msapplication-TileImage" content="/static/icons/icon-144.png">
+  <meta name="description" content="Professional Video Conferencing Platform">
+  <!-- PWA Icons -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
+  <link rel="apple-touch-icon" href="/static/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ═══════════════════════════════════════════════
+       LIVESTREAM FELIX — DESIGN SYSTEM
+       Palette: Deep Navy + Electric Indigo + Cyan Accent
+    ═══════════════════════════════════════════════ */
+    :root {
+      --bg-900:   #080c14;
+      --bg-800:   #0d1220;
+      --bg-700:   #121929;
+      --bg-600:   #1a2540;
+      --bg-500:   #1e2d4f;
+      --surface:  #1a2540;
+      --surface2: #1f2d4a;
+      --border:   #253154;
+      --border2:  #2e3d62;
+
+      --indigo:   #5b6ef5;
+      --indigo-h: #7b8ef9;
+      --indigo-d: #4557e8;
+      --cyan:     #00d4ff;
+      --cyan-d:   #00b8db;
+      --green:    #22d97a;
+      --red:      #ff4e6a;
+      --orange:   #ff9142;
+      --yellow:   #ffd166;
+      --purple:   #a855f7;
+
+      --text-1:   #eef2ff;
+      --text-2:   #a8b4d8;
+      --text-3:   #6b7db3;
+      --text-4:   #3d5080;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body:    'Inter', sans-serif;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+      --glow:      0 0 20px rgba(91,110,245,0.25);
+      --glow-cyan: 0 0 20px rgba(0,212,255,0.2);
+
+      --sidebar-w: 260px;
+      --header-h:  64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-900);
+      color: var(--text-1);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ──────────────────────────────────── */
+    .lsf-app { display: flex; min-height: 100vh; }
+
+    .lsf-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-800);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .lsf-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .lsf-topbar {
+      height: var(--header-h);
+      background: var(--bg-800);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .lsf-content {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    /* ── Logo ────────────────────────────────────── */
+    .lsf-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+
+    .lsf-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      color: white;
+      box-shadow: var(--glow);
+      flex-shrink: 0;
+    }
+
+    .lsf-logo-text {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-1);
+      line-height: 1.1;
+    }
+
+    .lsf-logo-text span {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--cyan);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Nav ─────────────────────────────────────── */
+    .lsf-nav { padding: 8px 12px; flex: 1; }
+
+    .lsf-nav-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-4);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 12px 8px 6px;
+    }
+
+    .lsf-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-3);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      margin-bottom: 2px;
+      position: relative;
+    }
+
+    .lsf-nav-item i { width: 18px; text-align: center; font-size: 15px; }
+
+    .lsf-nav-item:hover {
+      background: var(--bg-600);
+      color: var(--text-1);
+    }
+
+    .lsf-nav-item.active {
+      background: rgba(91,110,245,0.15);
+      color: var(--indigo-h);
+    }
+
+    .lsf-nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      background: var(--indigo);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .lsf-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* ── Quick Action Buttons ────────────────────── */
+    .lsf-quick-actions {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lsf-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .lsf-btn-primary {
+      background: linear-gradient(135deg, var(--indigo), var(--indigo-d));
+      color: white;
+      box-shadow: 0 4px 12px rgba(91,110,245,0.35);
+    }
+    .lsf-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(91,110,245,0.5);
+      color: white;
+    }
+
+    .lsf-btn-secondary {
+      background: var(--bg-600);
+      color: var(--text-2);
+      border: 1px solid var(--border2);
+    }
+    .lsf-btn-secondary:hover {
+      background: var(--bg-500);
+      color: var(--text-1);
+      border-color: var(--indigo);
+    }
+
+    .lsf-btn-danger {
+      background: rgba(255,78,106,0.15);
+      color: var(--red);
+      border: 1px solid rgba(255,78,106,0.3);
+    }
+    .lsf-btn-danger:hover { background: rgba(255,78,106,0.25); }
+
+    .lsf-btn-cyan {
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-d));
+      color: var(--bg-900);
+      font-weight: 700;
+    }
+    .lsf-btn-cyan:hover { transform: translateY(-1px); box-shadow: var(--glow-cyan); }
+
+    .lsf-btn-sm { padding: 6px 12px; font-size: 12px; }
+    .lsf-btn-lg { padding: 14px 28px; font-size: 16px; }
+    .lsf-btn-full { width: 100%; }
+
+    .lsf-btn-icon {
+      width: 36px; height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      background: var(--bg-600);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .lsf-btn-icon:hover { background: var(--bg-500); color: var(--text-1); border-color: var(--indigo); }
+
+    /* ── User Info (sidebar bottom) ──────────────── */
+    .lsf-sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-700);
+    }
+
+    .lsf-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+      border: 2px solid var(--border2);
+      position: relative;
+    }
+
+    .lsf-avatar.online::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 10px; height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      border: 2px solid var(--bg-800);
+    }
+
+    .lsf-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .lsf-avatar-lg { width: 48px; height: 48px; font-size: 18px; }
+    .lsf-avatar-xl { width: 64px; height: 64px; font-size: 24px; }
+
+    .lsf-user-meta { flex: 1; min-width: 0; }
+    .lsf-user-name { font-size: 13px; font-weight: 600; color: var(--text-1); truncate; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lsf-user-sub  { font-size: 11px; color: var(--text-3); }
+
+    /* ── Cards ───────────────────────────────────── */
+    .lsf-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+
+    .lsf-card-sm { padding: 16px; border-radius: var(--radius-md); }
+
+    .lsf-card:hover { border-color: var(--border2); }
+
+    .lsf-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .lsf-card-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+
+    /* ── Stat Cards ──────────────────────────────── */
+    .lsf-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color 0.2s;
+    }
+    .lsf-stat:hover { border-color: var(--indigo); }
+
+    .lsf-stat-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .lsf-stat-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-1);
+      line-height: 1;
+    }
+
+    .lsf-stat-label { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+
+    /* ── Inputs ──────────────────────────────────── */
+    .lsf-input {
+      width: 100%;
+      background: var(--bg-700);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      color: var(--text-1);
+      font-size: 14px;
+      font-family: var(--font-body);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .lsf-input:focus {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 3px rgba(91,110,245,0.15);
+    }
+
+    .lsf-input::placeholder { color: var(--text-4); }
+
+    .lsf-form-group { margin-bottom: 16px; }
+    .lsf-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+    }
+
+    .lsf-form-error { color: var(--red); font-size: 12px; margin-top: 4px; }
+
+    /* ── Room/Meeting Cards ───────────────────────── */
+    .lsf-meeting-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .lsf-meeting-card:hover {
+      border-color: var(--indigo);
+      background: var(--surface2);
+      transform: translateX(2px);
+    }
+
+    .lsf-meeting-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .lsf-meeting-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .lsf-meeting-meta  { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+    /* ── Status badges ───────────────────────────── */
+    .lsf-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .lsf-status::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .lsf-status-active  { background: rgba(34,217,122,0.12); color: var(--green); }
+    .lsf-status-waiting { background: rgba(255,145,66,0.12); color: var(--orange); }
+    .lsf-status-ended   { background: rgba(107,125,179,0.12); color: var(--text-3); }
+
+    /* ── Topbar search ───────────────────────────── */
+    .lsf-search {
+      display: flex;
+      align-items: center;
+      background: var(--bg-700);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0 14px;
+      gap: 10px;
+      flex: 1;
+      max-width: 360px;
+    }
+    .lsf-search i { color: var(--text-4); font-size: 14px; }
+    .lsf-search input {
+      background: none; border: none; outline: none;
+      color: var(--text-1); font-size: 14px; padding: 9px 0; flex: 1;
+    }
+
+    /* ── Grid helpers ────────────────────────────── */
+    .lsf-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .lsf-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .lsf-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    .lsf-flex  { display: flex; }
+    .lsf-flex-center { display: flex; align-items: center; justify-content: center; }
+    .lsf-gap-8  { gap: 8px; }
+    .lsf-gap-12 { gap: 12px; }
+    .lsf-gap-16 { gap: 16px; }
+    .lsf-gap-24 { gap: 24px; }
+    .lsf-ml-auto { margin-left: auto; }
+    .lsf-mt-8  { margin-top: 8px; }
+    .lsf-mt-16 { margin-top: 16px; }
+    .lsf-mt-24 { margin-top: 24px; }
+    .lsf-mb-16 { margin-bottom: 16px; }
+    .lsf-mb-24 { margin-bottom: 24px; }
+
+    /* ── Page headers ────────────────────────────── */
+    .lsf-page-header { margin-bottom: 32px; }
+    .lsf-page-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .lsf-page-sub { font-size: 15px; color: var(--text-3); margin-top: 6px; }
+
+    /* ── Dividers ────────────────────────────────── */
+    .lsf-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Toast ───────────────────────────────────── */
+    .lsf-toasts {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lsf-toast {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text-1);
+      box-shadow: var(--shadow-lg);
+      animation: slideIn 0.3s ease;
+      min-width: 280px;
+    }
+    .lsf-toast.success { border-color: var(--green); }
+    .lsf-toast.error   { border-color: var(--red); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+
+    /* ── Scrollbar ───────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
+    /* ── Responsive ──────────────────────────────── */
+    @media (max-width: 768px) {
+      .lsf-sidebar { transform: translateX(-100%); }
+      .lsf-sidebar.open { transform: translateX(0); }
+      .lsf-main { margin-left: 0; }
+      .lsf-content { padding: 16px; }
+      .lsf-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .lsf-grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .lsf-grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Mobile Responsive ───────────────────────────── */
+    @media (max-width: 600px) {
+      .lsf-sidebar { transform: translateX(-100%); }
+      .lsf-sidebar.open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+      .lsf-main { margin-left: 0; }
+      .lsf-content { padding: 16px; }
+      .lsf-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .lsf-grid-3 { grid-template-columns: 1fr 1fr; }
+      .lsf-grid-2 { grid-template-columns: 1fr; }
+      .lsf-topbar { padding: 0 12px; }
+      .lsf-page-title { font-size: 22px; }
+      .lsf-stat-value { font-size: 22px; }
+      /* Room mobile */
+      .room-controls { gap: 4px; padding: 0 6px; overflow-x: auto; justify-content: flex-start; }
+      .ctrl-btn { min-width: 50px; padding: 6px 6px; font-size: 9px; }
+      .ctrl-btn i { font-size: 14px; }
+      .ctrl-end { position: relative; right: auto; padding: 8px 12px; font-size: 12px; flex-shrink: 0; }
+      .room-sidebar { position: fixed !important; top: 56px; right: 0; bottom: 80px; width: 100% !important; z-index: 150; }
+      .room-title { font-size: 13px; }
+      .room-code { display: none; }
+      .video-grid.layout-2 { grid-template-columns: 1fr; grid-template-rows: repeat(2,1fr); }
+      .video-grid.layout-4 { grid-template-columns: repeat(2,1fr); }
+      .video-avatar-circle { width: 52px; height: 52px; font-size: 18px; }
+    }
+
+    /* ── PWA Install Banner ───────────────────────────── */
+    .pwa-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-800);
+      border-top: 1px solid var(--border2);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 9999;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+      animation: slideUp 0.4s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .pwa-banner-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--indigo), var(--cyan));
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .pwa-banner-text { flex: 1; }
+    .pwa-banner-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .pwa-banner-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="lsf-app">
+  <!-- ── Sidebar ─────────────────────────────── -->
+  <aside class="lsf-sidebar" id="sidebar">
+    <a href="{% url 'dashboard:home' %}" class="lsf-logo">
+      <div class="lsf-logo-icon"><i class="fa-solid fa-video"></i></div>
+      <div class="lsf-logo-text">
+        LiveStream Felix
+        <span>Professional Video Platform</span>
+      </div>
+    </a>
+
+    <nav class="lsf-nav">
+      <div class="lsf-nav-label">Main</div>
+      <a href="{% url 'dashboard:home' %}" class="lsf-nav-item {% if request.resolver_match.namespace == 'dashboard' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <i class="fa-solid fa-house"></i> Home
+      </a>
+      <a href="{% url 'dashboard:meetings' %}" class="lsf-nav-item {% if request.resolver_match.url_name == 'meetings' %}active{% endif %}">
+        <i class="fa-solid fa-calendar-days"></i> Meetings
+      </a>
+      <a href="{% url 'dashboard:people' %}" class="lsf-nav-item {% if request.resolver_match.url_name == 'people' %}active{% endif %}">
+        <i class="fa-solid fa-users"></i> People
+      </a>
+
+      <div class="lsf-nav-label" style="margin-top:8px;">Actions</div>
+      <a href="{% url 'rooms:instant' %}" class="lsf-nav-item">
+        <i class="fa-solid fa-bolt" style="color:var(--yellow)"></i> New Meeting
+      </a>
+      <a href="{% url 'rooms:join' %}" class="lsf-nav-item">
+        <i class="fa-solid fa-right-to-bracket" style="color:var(--cyan)"></i> Join Meeting
+      </a>
+      <a href="{% url 'rooms:create' %}" class="lsf-nav-item">
+        <i class="fa-solid fa-calendar-plus" style="color:var(--green)"></i> Schedule Meeting
+      </a>
+
+      <div class="lsf-nav-label" style="margin-top:8px;">Account</div>
+      <a href="{% url 'billing:pricing' %}" class="lsf-nav-item {% if request.resolver_match.namespace == 'billing' %}active{% endif %}">
+        <i class="fa-solid fa-crown" style="color:var(--yellow)"></i> Plans & Billing
+      </a>
+      <a href="{% url 'billing:subscription' %}" class="lsf-nav-item">
+        <i class="fa-solid fa-receipt" style="color:var(--cyan)"></i> My Subscription
+      </a>
+      <a href="{% url 'accounts:profile' %}" class="lsf-nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+        <i class="fa-solid fa-user-circle"></i> Profile
+      </a>
+      <a href="{% url 'accounts:logout' %}" class="lsf-nav-item" style="color:var(--red);">
+        <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+      </a>
+    </nav>
+
+    <!-- User card -->
+    <div class="lsf-sidebar-user">
+      <div class="lsf-avatar online">
+        {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.initials }}{% endif %}
+      </div>
+      <div class="lsf-user-meta">
+        <div class="lsf-user-name">{{ user.get_full_name|default:user.username }}</div>
+        <div class="lsf-user-sub">{{ user.job_title|default:"Member" }}</div>
+      </div>
+      <a href="{% url 'accounts:profile' %}" class="lsf-btn lsf-btn-icon lsf-btn-sm" title="Settings">
+        <i class="fa-solid fa-gear" style="font-size:13px;"></i>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────── -->
+  <div class="lsf-main">
+    <header class="lsf-topbar">
+      <button class="lsf-btn lsf-btn-icon" id="sidebarToggle" style="display:none;">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <div class="lsf-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search meetings, people…" id="globalSearch">
+      </div>
+
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+        <a href="{% url 'rooms:instant' %}" class="lsf-btn lsf-btn-primary lsf-btn-sm">
+          <i class="fa-solid fa-video"></i> New Meeting
+        </a>
+        <a href="{% url 'rooms:join' %}" class="lsf-btn lsf-btn-secondary lsf-btn-sm">
+          <i class="fa-solid fa-link"></i> Join
+        </a>
+        <div class="lsf-avatar online" style="cursor:pointer;">
+          {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}{{ user.initials }}{% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main class="lsf-content">
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="lsf-toast {{ msg.tags }}" style="position:relative;margin-bottom:12px;">
+            <i class="fa-solid {% if msg.tags == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}" style="color:var(--{% if msg.tags == 'success' %}green{% else %}indigo{% endif %})"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Toast container -->
+<div class="lsf-toasts" id="toastContainer"></div>
+
+<!-- PWA Install Banner -->
+<div class="pwa-banner" id="pwaBanner" style="display:none;">
+  <div class="pwa-banner-icon">🎥</div>
+  <div class="pwa-banner-text">
+    <div class="pwa-banner-title">Install LiveStream Felix</div>
+    <div class="pwa-banner-sub">Add to your home screen for the best experience</div>
+  </div>
+  <button onclick="installPWA()" class="lsf-btn lsf-btn-primary lsf-btn-sm">Install</button>
+  <button onclick="dismissPWA()" class="lsf-btn lsf-btn-secondary lsf-btn-sm" style="padding:6px 10px;">✕</button>
+</div>
+
+<script>
+  // Sidebar toggle for mobile
+  const sidebar = document.getElementById('sidebar');
+  const toggle = document.getElementById('sidebarToggle');
+  if (toggle) {
+    toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  }
+  if (window.innerWidth < 768 && toggle) toggle.style.display = 'flex';
+
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth < 768 && sidebar && sidebar.classList.contains('open')) {
+      if (!sidebar.contains(e.target) && e.target !== toggle) {
+        sidebar.classList.remove('open');
+      }
+    }
+  });
+
+  // Global toast utility
+  function showToast(msg, type = 'info') {
+    const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+    const colors = { success: 'var(--green)', error: 'var(--red)', info: 'var(--indigo)' };
+    const el = document.createElement('div');
+    el.className = `lsf-toast ${type}`;
+    el.innerHTML = `<i class="fa-solid ${icons[type]}" style="color:${colors[type]}"></i>${msg}`;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  // Auto-dismiss django messages
+  document.querySelectorAll('.lsf-toast[style*="position:relative"]').forEach(t => {
+    setTimeout(() => t.style.opacity = '0', 3000);
+  });
+
+  // ── PWA Service Worker Registration ───────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => {
+          console.log('[PWA] Service Worker registered:', reg.scope);
+          // Check for updates
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showToast('App updated! Refresh for the latest version.', 'info');
+              }
+            });
+          });
+        })
+        .catch(err => console.log('[PWA] SW registration failed:', err));
+    });
+  }
+
+  // ── PWA Install Prompt ────────────────────────────────
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show banner if not dismissed before
+    if (!localStorage.getItem('pwa-dismissed')) {
+      setTimeout(() => {
+        document.getElementById('pwaBanner').style.display = 'flex';
+      }, 3000);
+    }
+  });
+
+  function installPWA() {
+    if (!deferredPrompt) {
+      showToast('To install: tap the browser menu → "Add to Home Screen"', 'info');
+      return;
+    }
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        showToast('🎉 LiveStream Felix installed!', 'success');
+      }
+      deferredPrompt = null;
+      document.getElementById('pwaBanner').style.display = 'none';
+    });
+  }
+
+  function dismissPWA() {
+    document.getElementById('pwaBanner').style.display = 'none';
+    localStorage.setItem('pwa-dismissed', '1');
+  }
+
+  // iOS install hint
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+  if (isIOS && !isInStandaloneMode && !localStorage.getItem('pwa-dismissed')) {
+    setTimeout(() => {
+      const banner = document.getElementById('pwaBanner');
+      banner.querySelector('.pwa-banner-sub').textContent = 'Tap Share → "Add to Home Screen"';
+      banner.style.display = 'flex';
+    }, 3000);
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

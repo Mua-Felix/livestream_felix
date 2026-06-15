@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LiveStream Felix{% endblock %}
+
+{% block content %}
+<div class="lsf-page-header">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 class="lsf-page-title">Good {{ time_greeting }}, {{ user.first_name|default:user.username }} 👋</h1>
+      <p class="lsf-page-sub">Ready to connect? Your meetings and workspace await.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="{% url 'rooms:instant' %}" class="lsf-btn lsf-btn-cyan lsf-btn-lg">
+        <i class="fa-solid fa-video"></i> Start Instant Meeting
+      </a>
+      <a href="{% url 'rooms:join' %}" class="lsf-btn lsf-btn-secondary lsf-btn-lg">
+        <i class="fa-solid fa-right-to-bracket"></i> Join Meeting
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="lsf-grid-4 lsf-mb-24">
+  <div class="lsf-stat">
+    <div class="lsf-stat-icon" style="background:rgba(91,110,245,0.15);color:var(--indigo);">
+      <i class="fa-solid fa-video"></i>
+    </div>
+    <div>
+      <div class="lsf-stat-value">{{ total_meetings }}</div>
+      <div class="lsf-stat-label">Total Meetings</div>
+    </div>
+  </div>
+  <div class="lsf-stat">
+    <div class="lsf-stat-icon" style="background:rgba(0,212,255,0.12);color:var(--cyan);">
+      <i class="fa-solid fa-crown"></i>
+    </div>
+    <div>
+      <div class="lsf-stat-value">{{ total_hosted }}</div>
+      <div class="lsf-stat-label">Hosted</div>
+    </div>
+  </div>
+  <div class="lsf-stat">
+    <div class="lsf-stat-icon" style="background:rgba(34,217,122,0.12);color:var(--green);">
+      <i class="fa-solid fa-clock"></i>
+    </div>
+    <div>
+      <div class="lsf-stat-value">{{ total_minutes }}</div>
+      <div class="lsf-stat-label">Minutes in Calls</div>
+    </div>
+  </div>
+  <div class="lsf-stat">
+    <div class="lsf-stat-icon" style="background:rgba(168,85,247,0.12);color:var(--purple);">
+      <i class="fa-solid fa-users"></i>
+    </div>
+    <div>
+      <div class="lsf-stat-value">{{ online_users.count }}</div>
+      <div class="lsf-stat-label">Online Now</div>
+    </div>
+  </div>
+</div>
+
+<!-- Active meetings banner -->
+{% if active_rooms %}
+<div style="background:linear-gradient(135deg,rgba(91,110,245,0.15),rgba(0,212,255,0.1));border:1px solid rgba(91,110,245,0.3);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;"></div>
+    <span style="font-weight:600;color:var(--text-1);">Active Meeting{% if active_rooms.count > 1 %}s{% endif %}</span>
+  </div>
+  {% for room in active_rooms %}
+  <a href="{% url 'rooms:room' room.code %}" class="lsf-btn lsf-btn-primary lsf-btn-sm">
+    <i class="fa-solid fa-video"></i> {{ room.title }} — Rejoin
+  </a>
+  {% endfor %}
+</div>
+<style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }</style>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:24px;">
+  <!-- Left: Upcoming + Recent -->
+  <div>
+    <!-- Upcoming -->
+    <div class="lsf-card lsf-mb-24">
+      <div class="lsf-card-header">
+        <span class="lsf-card-title"><i class="fa-solid fa-calendar-days" style="color:var(--indigo);margin-right:8px;"></i>Upcoming Meetings</span>
+        <a href="{% url 'rooms:create' %}" class="lsf-btn lsf-btn-secondary lsf-btn-sm">+ Schedule</a>
+      </div>
+      {% if upcoming %}
+        {% for room in upcoming %}
+        <a href="{% url 'rooms:room' room.code %}" class="lsf-meeting-card lsf-mb-16" style="text-decoration:none;">
+          <div class="lsf-meeting-icon" style="background:rgba(91,110,245,0.15);color:var(--indigo);">
+            <i class="fa-solid fa-calendar"></i>
+          </div>
+          <div style="flex:1;">
+            <div class="lsf-meeting-title">{{ room.title }}</div>
+            <div class="lsf-meeting-meta">
+              {% if room.scheduled_start %}{{ room.scheduled_start|date:"M d, Y — H:i" }}{% endif %}
+              · Code: <strong style="color:var(--cyan);">{{ room.code }}</strong>
+            </div>
+          </div>
+          <span class="lsf-status lsf-status-waiting">Upcoming</span>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:32px;color:var(--text-3);">
+          <i class="fa-solid fa-calendar-xmark" style="font-size:32px;margin-bottom:12px;display:block;opacity:0.4;"></i>
+          No upcoming meetings. <a href="{% url 'rooms:create' %}" style="color:var(--indigo);">Schedule one</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent -->
+    <div class="lsf-card">
+      <div class="lsf-card-header">
+        <span class="lsf-card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--text-3);margin-right:8px;"></i>Recent Meetings</span>
+        <a href="{% url 'dashboard:meetings' %}" class="lsf-btn lsf-btn-secondary lsf-btn-sm">View All</a>
+      </div>
+      {% if recent %}
+        {% for room in recent %}
+        <div class="lsf-meeting-card lsf-mb-16">
+          <div class="lsf-meeting-icon" style="background:rgba(107,125,179,0.12);color:var(--text-3);">
+            <i class="fa-solid fa-video-slash"></i>
+          </div>
+          <div style="flex:1;">
+            <div class="lsf-meeting-title">{{ room.title }}</div>
+            <div class="lsf-meeting-meta">
+              {{ room.ended_at|date:"M d, Y — H:i"|default:"—" }}
+              · {{ room.duration_minutes }} min
+              · {{ room.participant_count }} participant{{ room.participant_count|pluralize }}
+            </div>
+          </div>
+          <span class="lsf-status lsf-status-ended">Ended</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:32px;color:var(--text-3);">
+          <i class="fa-solid fa-history" style="font-size:32px;margin-bottom:12px;display:block;opacity:0.4;"></i>
+          No past meetings yet.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Online People + Quick Join -->
+  <div>
+    <!-- Quick Join -->
+    <div class="lsf-card lsf-mb-24" style="background:linear-gradient(135deg,var(--bg-600),var(--bg-700));">
+      <div class="lsf-card-title lsf-mb-16">Quick Join</div>
+      <form method="get" action="{% url 'rooms:join' %}" onsubmit="this.method='post';">
+        {% csrf_token %}
+        <div class="lsf-form-group">
+          <label class="lsf-label">Meeting Code</label>
+          <input class="lsf-input" type="text" name="code" placeholder="Enter meeting code…" style="letter-spacing:0.1em;text-transform:uppercase;font-weight:600;font-size:16px;" maxlength="20">
+        </div>
+        <button type="submit" class="lsf-btn lsf-btn-primary lsf-btn-full">
+          <i class="fa-solid fa-right-to-bracket"></i> Join Now
+        </button>
+      </form>
+    </div>
+
+    <!-- Online People -->
+    <div class="lsf-card">
+      <div class="lsf-card-header">
+        <span class="lsf-card-title">Online Now</span>
+        <span class="lsf-status lsf-status-active">{{ online_users.count }} online</span>
+      </div>
+      {% if online_users %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          {% for u in online_users %}
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="lsf-avatar online">{{ u.initials }}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-1);">{{ u.get_full_name|default:u.username }}</div>
+              <div style="font-size:11px;color:var(--text-3);">{{ u.job_title|default:"Member" }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align:center;padding:20px;color:var(--text-4);font-size:13px;">
+          No one else online right now.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

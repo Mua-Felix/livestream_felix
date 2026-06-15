@@ -1,0 +1,1483 @@
+{% extends "base.html" %}
+{% block title %}{{ room.title }} — LiveStream Felix{% endblock %}
+
+{% block extra_css %}
+/* ═══════════════════════════════════════════
+   ROOM / MEETING UI
+═══════════════════════════════════════════ */
+.room-wrap {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-900);
+  display: grid;
+  grid-template-rows: 56px 1fr 80px;
+  z-index: 200;
+}
+
+/* ── Room Header ── */
+.room-header {
+  background: var(--bg-800);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+}
+
+.room-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.room-code {
+  font-size: 12px;
+  color: var(--text-3);
+  background: var(--bg-700);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
+
+.room-timer {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.room-rec-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+.room-rec-dot::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 1.5s infinite;
+}
+
+/* ── Video Grid ── */
+.room-body {
+  display: flex;
+  overflow: hidden;
+}
+
+.video-stage {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-grid {
+  flex: 1;
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.video-grid.layout-1  { grid-template-columns: 1fr; }
+.video-grid.layout-2  { grid-template-columns: repeat(2, 1fr); }
+.video-grid.layout-4  { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+.video-grid.layout-6  { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+.video-grid.layout-9  { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+.video-grid.layout-16 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+
+.video-tile {
+  background: var(--bg-700);
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.video-tile.speaking { border-color: var(--green); box-shadow: 0 0 12px rgba(34,217,122,0.3); }
+.video-tile.pinned   { border-color: var(--indigo); }
+
+.video-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scaleX(-1);
+}
+
+.video-tile.self-view video { transform: scaleX(-1); }
+
+.video-avatar-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg-700);
+}
+
+.video-avatar-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--indigo), var(--purple));
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  font-family: var(--font-display);
+}
+
+.video-tile-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 8px 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.video-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-mic-icon { font-size: 12px; }
+.video-mic-icon.muted { color: var(--red); }
+.video-mic-icon.active { color: var(--green); }
+
+.video-tile-top {
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex;
+  gap: 6px;
+}
+
+.video-tag {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.reaction-bubble {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  animation: floatUp 2s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes floatUp {
+  0%   { transform: translateX(-50%) translateY(0); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-60px); opacity: 0; }
+}
+
+/* ── Sidebar Panels ── */
+.room-sidebar {
+  width: 320px;
+  background: var(--bg-800);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+.room-sidebar.hidden { display: none; }
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.sidebar-tab.active { color: var(--indigo); border-bottom-color: var(--indigo); }
+.sidebar-tab:hover  { color: var(--text-1); }
+
+.sidebar-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.sidebar-panel.active { display: flex; }
+
+/* Chat */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.chat-msg.self { flex-direction: row-reverse; }
+
+.chat-bubble {
+  background: var(--bg-600);
+  border-radius: 12px 12px 12px 4px;
+  padding: 9px 13px;
+  max-width: 220px;
+  font-size: 13px;
+  color: var(--text-1);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.chat-msg.self .chat-bubble {
+  background: rgba(91,110,245,0.2);
+  border: 1px solid rgba(91,110,245,0.3);
+  border-radius: 12px 12px 4px 12px;
+}
+
+.chat-meta { font-size: 11px; color: var(--text-4); margin-top: 3px; }
+.chat-sender { font-size: 11px; font-weight: 600; color: var(--text-3); margin-bottom: 3px; }
+
+.chat-input-wrap {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.chat-input-box {
+  flex: 1;
+  background: var(--bg-700);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text-1);
+  font-size: 13px;
+  font-family: var(--font-body);
+  outline: none;
+  resize: none;
+  min-height: 40px;
+  max-height: 100px;
+  line-height: 1.5;
+}
+
+.chat-input-box:focus { border-color: var(--indigo); }
+
+/* Participants panel */
+.participants-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.participant-item:hover { background: var(--bg-600); }
+
+.p-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.participant-item:hover .p-controls { opacity: 1; }
+
+.p-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--bg-500);
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+
+.p-btn:hover { background: var(--red); color: white; }
+
+/* ── Control Bar ── */
+.room-controls {
+  background: var(--bg-800);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  position: relative;
+}
+
+.ctrl-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-600);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.15s;
+  min-width: 64px;
+  text-align: center;
+}
+
+.ctrl-btn i { font-size: 18px; }
+.ctrl-btn:hover { background: var(--bg-500); color: var(--text-1); border-color: var(--border2); }
+.ctrl-btn.active { background: rgba(91,110,245,0.2); border-color: var(--indigo); color: var(--indigo-h); }
+.ctrl-btn.danger { background: rgba(255,78,106,0.15); border-color: rgba(255,78,106,0.4); color: var(--red); }
+.ctrl-btn.danger:hover { background: var(--red); color: white; }
+
+.ctrl-btn.muted-state { background: rgba(255,78,106,0.15); border-color: rgba(255,78,106,0.3); color: var(--red); }
+
+.ctrl-end {
+  position: absolute;
+  right: 20px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.ctrl-end:hover { background: #e0334a; transform: translateY(-1px); }
+
+/* ── Reactions Bar ── */
+.reactions-bar {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-800);
+  border: 1px solid var(--border2);
+  border-radius: 40px;
+  padding: 8px 14px;
+  display: flex;
+  gap: 6px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+.reaction-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+  line-height: 1;
+}
+
+.reaction-btn:hover { transform: scale(1.3); }
+
+/* ── Settings Modal ── */
+.room-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-modal {
+  background: var(--bg-800);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  width: 500px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Screen share banner ── */
+.screen-share-banner {
+  background: rgba(91,110,245,0.15);
+  border: 1px solid rgba(91,110,245,0.3);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--indigo-h);
+  font-weight: 500;
+}
+{% endblock %}
+
+{% block content %}{% endblock %}
+
+{% block extra_js %}
+<!-- The entire meeting UI is self-contained, overriding the base layout -->
+<div class="room-wrap" id="roomWrap">
+
+  <!-- Header -->
+  <div class="room-header">
+    <div class="lsf-logo-icon" style="width:32px;height:32px;font-size:14px;flex-shrink:0;">
+      <i class="fa-solid fa-video"></i>
+    </div>
+    <div class="room-title">{{ room.title }}</div>
+    <div class="room-code" id="roomCodeBadge" onclick="copyCode()" title="Click to copy">{{ room.code }}</div>
+    <div class="room-timer" id="roomTimer">00:00</div>
+    <div id="recIndicator" style="display:none;" class="room-rec-dot">REC</div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+      <button class="lsf-btn lsf-btn-secondary lsf-btn-sm" onclick="toggleSettings()">
+        <i class="fa-solid fa-gear"></i> Settings
+      </button>
+      {% if is_host %}
+      <button class="lsf-btn lsf-btn-danger lsf-btn-sm" onclick="confirmEndMeeting()">
+        <i class="fa-solid fa-phone-slash"></i> End for All
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="room-body">
+
+    <!-- Video Stage -->
+    <div class="video-stage">
+      <div id="screenShareBanner" class="screen-share-banner" style="display:none;">
+        <i class="fa-solid fa-desktop"></i>
+        <span id="screenShareText">You are sharing your screen</span>
+        <button onclick="stopScreenShare()" class="lsf-btn lsf-btn-danger lsf-btn-sm" style="margin-left:auto;">Stop Sharing</button>
+      </div>
+
+      <div class="video-grid layout-1" id="videoGrid">
+        <!-- Self video tile -->
+        <div class="video-tile self-view" id="selfTile" data-user-id="{{ user_json|escapejs }}">
+          <video id="localVideo" autoplay muted playsinline></video>
+          <div class="video-avatar-placeholder" id="selfPlaceholder">
+            <div class="video-avatar-circle">{{ user.initials }}</div>
+            <span style="font-size:13px;color:var(--text-3);">{{ user.get_full_name|default:user.username }}</span>
+          </div>
+          <div class="video-tile-top">
+            <span class="video-tag" style="background:rgba(91,110,245,0.7);">You</span>
+          </div>
+          <div class="video-tile-overlay">
+            <span class="video-name">{{ user.get_full_name|default:user.username }}</span>
+            <i class="fa-solid fa-microphone video-mic-icon active" id="selfMicIcon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="room-sidebar" id="roomSidebar">
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" onclick="switchTab('chat')" id="tab-chat">
+          <i class="fa-solid fa-comment"></i> Chat
+          <span id="unreadBadge" style="display:none;background:var(--red);color:white;border-radius:10px;padding:0 5px;font-size:10px;margin-left:4px;"></span>
+        </div>
+        <div class="sidebar-tab" onclick="switchTab('participants')" id="tab-participants">
+          <i class="fa-solid fa-users"></i> People
+        </div>
+        <div class="sidebar-tab" onclick="switchTab('polls')" id="tab-polls">
+          <i class="fa-solid fa-chart-bar"></i> Polls
+        </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div class="sidebar-panel active" id="panel-chat">
+        <div class="chat-messages" id="chatMessages">
+          <div style="text-align:center;padding:20px;color:var(--text-4);font-size:13px;">
+            <i class="fa-solid fa-comments" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            Say hello to everyone!
+          </div>
+        </div>
+        <div id="typingIndicator" style="padding:4px 16px;font-size:12px;color:var(--text-4);min-height:20px;"></div>
+        <div class="chat-input-wrap">
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+            <div id="replyPreview" style="display:none;background:var(--bg-600);border-left:3px solid var(--indigo);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--text-3);"></div>
+            <div style="display:flex;gap:6px;">
+              <textarea class="chat-input-box" id="chatInput" placeholder="Message everyone…" rows="1"></textarea>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <button class="lsf-btn lsf-btn-icon lsf-btn-sm" onclick="toggleEmojis()" title="Emoji" style="width:32px;height:32px;">😊</button>
+                <button class="lsf-btn lsf-btn-primary lsf-btn-sm" onclick="sendMessage()" title="Send" style="width:32px;height:32px;padding:0;">
+                  <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Emoji picker -->
+        <div id="emojiPicker" style="display:none;padding:10px;border-top:1px solid var(--border);display:none;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            {% for e in "😀😂😍🤔👍👎❤️🎉🔥✅❌🙏🤝💡🚀🎯💪🎵🌟⭐" %}
+            <button onclick="insertEmoji('{{ e }}')" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px;border-radius:4px;" onmouseover="this.style.background='var(--bg-600)'" onmouseout="this.style.background='none'">{{ e }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Participants Panel -->
+      <div class="sidebar-panel" id="panel-participants">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:13px;font-weight:600;color:var(--text-2);">Participants (<span id="pCount">1</span>)</span>
+          {% if is_host %}
+          <button class="lsf-btn lsf-btn-secondary lsf-btn-sm" onclick="muteAll()">
+            <i class="fa-solid fa-microphone-slash"></i> Mute All
+          </button>
+          {% endif %}
+        </div>
+        <div class="participants-list" id="participantsList">
+          <!-- Self -->
+          <div class="participant-item" id="self-participant">
+            <div class="lsf-avatar" style="background:linear-gradient(135deg,var(--indigo),var(--purple));">{{ user.initials }}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-1);">{{ user.get_full_name|default:user.username }} (You)</div>
+              <div style="font-size:11px;color:var(--green);">{% if is_host %}Host{% else %}Attendee{% endif %}</div>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:6px;">
+              <i class="fa-solid fa-microphone" id="selfMicStatus" style="color:var(--green);font-size:14px;"></i>
+              <i class="fa-solid fa-video" id="selfVidStatus" style="color:var(--green);font-size:14px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Polls Panel -->
+      <div class="sidebar-panel" id="panel-polls">
+        <div style="padding:16px;">
+          {% if is_host %}
+          <button class="lsf-btn lsf-btn-primary lsf-btn-full" onclick="showCreatePoll()">
+            <i class="fa-solid fa-plus"></i> Create Poll
+          </button>
+          {% endif %}
+          <div id="pollsContainer" style="margin-top:16px;">
+            <div style="text-align:center;padding:32px;color:var(--text-4);font-size:13px;">
+              <i class="fa-solid fa-chart-bar" style="font-size:24px;display:block;margin-bottom:8px;opacity:0.4;"></i>
+              No active polls yet.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reactions Bar (hidden by default) -->
+  <div class="reactions-bar" id="reactionsBar" style="display:none;">
+    <button class="reaction-btn" onclick="sendReaction('👍')">👍</button>
+    <button class="reaction-btn" onclick="sendReaction('👏')">👏</button>
+    <button class="reaction-btn" onclick="sendReaction('❤️')">❤️</button>
+    <button class="reaction-btn" onclick="sendReaction('😂')">😂</button>
+    <button class="reaction-btn" onclick="sendReaction('😮')">😮</button>
+    <button class="reaction-btn" onclick="sendReaction('🎉')">🎉</button>
+    <button class="reaction-btn" onclick="sendReaction('🔥')">🔥</button>
+    <button class="reaction-btn" onclick="sendReaction('✋')">✋</button>
+  </div>
+
+  <!-- Control Bar -->
+  <div class="room-controls" id="roomControls">
+    <button class="ctrl-btn" id="micBtn" onclick="toggleMic()">
+      <i class="fa-solid fa-microphone" id="micIcon"></i>
+      <span>Mic</span>
+    </button>
+    <button class="ctrl-btn" id="cameraBtn" onclick="toggleCamera()">
+      <i class="fa-solid fa-video" id="cameraIcon"></i>
+      <span>Camera</span>
+    </button>
+    <button class="ctrl-btn" id="screenBtn" onclick="toggleScreenShare()">
+      <i class="fa-solid fa-desktop" id="screenIcon"></i>
+      <span>Share</span>
+    </button>
+    <button class="ctrl-btn" id="handBtn" onclick="toggleHand()">
+      <i class="fa-solid fa-hand" id="handIcon"></i>
+      <span>Raise Hand</span>
+    </button>
+    <button class="ctrl-btn" id="reactBtn" onclick="toggleReactions()">
+      <i class="fa-solid fa-face-smile"></i>
+      <span>React</span>
+    </button>
+    <button class="ctrl-btn" id="chatBtn" onclick="togglePanel('chat')">
+      <i class="fa-solid fa-comment"></i>
+      <span>Chat</span>
+    </button>
+    <button class="ctrl-btn" id="peopleBtn" onclick="togglePanel('participants')">
+      <i class="fa-solid fa-users"></i>
+      <span>People</span>
+    </button>
+    <button class="ctrl-btn" id="pollBtn" onclick="togglePanel('polls')">
+      <i class="fa-solid fa-chart-bar"></i>
+      <span>Polls</span>
+    </button>
+
+    <!-- Leave button -->
+    <button class="ctrl-end" onclick="leaveRoom()">
+      <i class="fa-solid fa-phone-slash"></i> Leave
+    </button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="room-modal-bg" id="settingsModal" style="display:none;" onclick="if(event.target===this)toggleSettings()">
+  <div class="room-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;">Settings</h3>
+      <button onclick="toggleSettings()" style="background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Camera</div>
+      <select class="lsf-input" id="videoSourceSelect">
+        <option>Loading cameras…</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Microphone</div>
+      <select class="lsf-input" id="audioSourceSelect">
+        <option>Loading microphones…</option>
+      </select>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;height:6px;background:var(--bg-600);border-radius:3px;overflow:hidden;">
+          <div id="audioMeter" style="height:100%;background:var(--green);width:0%;transition:width 0.1s;border-radius:3px;"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text-3);">Mic level</span>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Background</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="setBg('none')" class="lsf-btn lsf-btn-secondary lsf-btn-sm active" id="bg-none">None</button>
+        <button onclick="setBg('blur')" class="lsf-btn lsf-btn-secondary lsf-btn-sm" id="bg-blur"><i class="fa-solid fa-droplet"></i> Blur</button>
+      </div>
+    </div>
+    <hr class="lsf-divider">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:14px;color:var(--text-2);">Meeting Code</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <code style="background:var(--bg-700);border-radius:6px;padding:4px 10px;font-size:14px;color:var(--cyan);">{{ room.code }}</code>
+        <button onclick="copyCode()" class="lsf-btn lsf-btn-secondary lsf-btn-sm"><i class="fa-solid fa-copy"></i> Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Poll Modal -->
+<div class="room-modal-bg" id="pollModal" style="display:none;">
+  <div class="room-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;">Create Poll</h3>
+      <button onclick="closePollModal()" style="background:none;border:none;color:var(--text-3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div class="lsf-form-group">
+      <label class="lsf-label">Question</label>
+      <input class="lsf-input" type="text" id="pollQuestion" placeholder="Ask the audience…">
+    </div>
+    <div id="pollOptions">
+      <label class="lsf-label">Options</label>
+      <div style="display:flex;flex-direction:column;gap:8px;" id="pollOptionsList">
+        <input class="lsf-input" type="text" placeholder="Option 1">
+        <input class="lsf-input" type="text" placeholder="Option 2">
+      </div>
+    </div>
+    <button onclick="addPollOption()" class="lsf-btn lsf-btn-secondary lsf-btn-sm" style="margin-top:10px;">+ Add Option</button>
+    <hr class="lsf-divider">
+    <button onclick="launchPoll()" class="lsf-btn lsf-btn-primary lsf-btn-full">
+      <i class="fa-solid fa-paper-plane"></i> Launch Poll
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  LIVESTREAM FELIX — ROOM JAVASCRIPT ENGINE
+// ═══════════════════════════════════════════════════════
+const ROOM_CODE   = '{{ room.code }}';
+const CURRENT_USER = JSON.parse('{{ user_json|escapejs }}');
+const IS_HOST     = {{ is_host|lower }};
+const WS_PROTO    = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+// State
+let localStream     = null;
+let screenStream    = null;
+let peerConnections = {};   // { userId: RTCPeerConnection }
+let remoteStreams    = {};   // { userId: MediaStream }
+let isMuted         = false;
+let isCameraOff     = false;
+let isScreenSharing = false;
+let isHandRaised    = false;
+let unreadCount     = 0;
+let sidebarOpen     = true;
+let activeTab       = 'chat';
+let replyToId       = null;
+let startTime       = Date.now();
+let timerInterval   = null;
+let typingTimeout   = null;
+
+// WebSocket connections
+let roomWS, chatWS;
+
+// ICE configuration
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ]
+};
+
+// ── Init ────────────────────────────────────────────────
+async function init() {
+  await setupMedia();
+  connectRoomWS();
+  connectChatWS();
+  startTimer();
+  populateDevices();
+}
+
+// ── Media Setup ─────────────────────────────────────────
+async function setupMedia() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const localVideo = document.getElementById('localVideo');
+    localVideo.srcObject = localStream;
+    document.getElementById('selfPlaceholder').style.display = 'none';
+    localVideo.style.display = 'block';
+    startAudioMeter();
+  } catch (err) {
+    console.warn('Media access denied or unavailable:', err);
+    showToast('Camera/mic not available. Joining without media.', 'error');
+    localStream = new MediaStream(); // empty stream
+  }
+}
+
+async function populateDevices() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const vidSel = document.getElementById('videoSourceSelect');
+    const audSel = document.getElementById('audioSourceSelect');
+    vidSel.innerHTML = '';
+    audSel.innerHTML = '';
+    devices.forEach(d => {
+      const opt = new Option(d.label || `${d.kind} ${d.deviceId.slice(0,6)}`, d.deviceId);
+      if (d.kind === 'videoinput') vidSel.add(opt);
+      if (d.kind === 'audioinput') audSel.add(opt);
+    });
+  } catch(e) {}
+}
+
+function startAudioMeter() {
+  if (!localStream) return;
+  try {
+    const ctx = new AudioContext();
+    const src = ctx.createMediaStreamSource(localStream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    src.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    setInterval(() => {
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a,b) => a+b) / data.length;
+      document.getElementById('audioMeter').style.width = Math.min(avg*3, 100) + '%';
+    }, 100);
+  } catch(e) {}
+}
+
+// ── WebRTC ──────────────────────────────────────────────
+function createPeerConnection(userId) {
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+
+  if (localStream) {
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  }
+
+  pc.ontrack = ({ streams: [stream] }) => {
+    remoteStreams[userId] = stream;
+    updateRemoteVideo(userId, stream);
+  };
+
+  pc.onicecandidate = ({ candidate }) => {
+    if (candidate) {
+      roomWS.send(JSON.stringify({ type: 'ice_candidate', candidate, target_id: userId }));
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    if (['disconnected','failed','closed'].includes(pc.iceConnectionState)) {
+      removePeer(userId);
+    }
+  };
+
+  peerConnections[userId] = pc;
+  return pc;
+}
+
+async function handleUserJoined(data) {
+  if (data.user_id === CURRENT_USER.id) return;
+  addParticipantToList(data);
+  addVideoTile(data.user_id, data.username, data.initials);
+
+  const pc = createPeerConnection(data.user_id);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  roomWS.send(JSON.stringify({ type: 'offer', offer, target_id: data.user_id }));
+}
+
+async function handleOffer(data) {
+  if (data.target_id !== CURRENT_USER.id) return;
+  const pc = createPeerConnection(data.sender_id);
+  await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  roomWS.send(JSON.stringify({ type: 'answer', answer, target_id: data.sender_id }));
+}
+
+async function handleAnswer(data) {
+  if (data.target_id !== CURRENT_USER.id) return;
+  const pc = peerConnections[data.sender_id];
+  if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+}
+
+async function handleIce(data) {
+  if (data.target_id !== CURRENT_USER.id) return;
+  const pc = peerConnections[data.sender_id];
+  if (pc && data.candidate) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+}
+
+function removePeer(userId) {
+  if (peerConnections[userId]) {
+    peerConnections[userId].close();
+    delete peerConnections[userId];
+    delete remoteStreams[userId];
+  }
+  const tile = document.getElementById(`tile-${userId}`);
+  if (tile) tile.remove();
+  const pItem = document.getElementById(`p-${userId}`);
+  if (pItem) pItem.remove();
+  updateGridLayout();
+  updateParticipantCount();
+}
+
+// ── Room WebSocket ───────────────────────────────────────
+function connectRoomWS() {
+  roomWS = new WebSocket(`${WS_PROTO}://${window.location.host}/ws/room/${ROOM_CODE}/`);
+
+  roomWS.onmessage = async (e) => {
+    const data = JSON.parse(e.data);
+    switch (data.type) {
+      case 'user_joined':    await handleUserJoined(data); break;
+      case 'user_left':      removePeer(data.user_id); showToast(`${data.username} left`); break;
+      case 'offer':          await handleOffer(data); break;
+      case 'answer':         await handleAnswer(data); break;
+      case 'ice_candidate':  await handleIce(data); break;
+      case 'media_update':   handleMediaUpdate(data); break;
+      case 'screen_share':   handleRemoteScreenShare(data); break;
+      case 'hand_raised':    handleHandRaised(data); break;
+      case 'reaction':       showReactionBubble(data.user_id, data.emoji); break;
+      case 'kicked':         if (data.target_id === CURRENT_USER.id) { alert('You were removed by the host.'); leaveRoom(); } break;
+      case 'force_mute':     if (data.target_id === CURRENT_USER.id) { forceLocalMute(); } break;
+      case 'meeting_ended':  alert('The host has ended the meeting.'); window.location.href = '/dashboard/'; break;
+      case 'poll':           handlePollReceived(data.poll); break;
+    }
+  };
+
+  roomWS.onclose = () => {
+    if (document.visibilityState !== 'hidden') {
+      setTimeout(connectRoomWS, 2000);
+    }
+  };
+}
+
+// ── Chat WebSocket ───────────────────────────────────────
+function connectChatWS() {
+  chatWS = new WebSocket(`${WS_PROTO}://${window.location.host}/ws/chat/${ROOM_CODE}/`);
+
+  chatWS.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'history') {
+      const container = document.getElementById('chatMessages');
+      if (data.messages.length) {
+        container.innerHTML = '';
+        data.messages.forEach(m => appendChatMessage(m));
+      }
+    } else if (data.type === 'message') {
+      appendChatMessage(data);
+      if (activeTab !== 'chat' || !sidebarOpen) {
+        unreadCount++;
+        updateUnreadBadge();
+      }
+    } else if (data.type === 'typing') {
+      showTypingIndicator(data.username, data.is_typing);
+    }
+  };
+
+  chatWS.onclose = () => setTimeout(connectChatWS, 2000);
+}
+
+// ── Controls ─────────────────────────────────────────────
+function toggleMic() {
+  isMuted = !isMuted;
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+  }
+  const btn = document.getElementById('micBtn');
+  const icon = document.getElementById('micIcon');
+  const selfMicIcon = document.getElementById('selfMicIcon');
+  const selfMicStatus = document.getElementById('selfMicStatus');
+
+  if (isMuted) {
+    btn.classList.add('muted-state');
+    icon.className = 'fa-solid fa-microphone-slash';
+    selfMicIcon.className = 'fa-solid fa-microphone-slash video-mic-icon muted';
+    selfMicStatus.className = 'fa-solid fa-microphone-slash';
+    selfMicStatus.style.color = 'var(--red)';
+  } else {
+    btn.classList.remove('muted-state');
+    icon.className = 'fa-solid fa-microphone';
+    selfMicIcon.className = 'fa-solid fa-microphone video-mic-icon active';
+    selfMicStatus.className = 'fa-solid fa-microphone';
+    selfMicStatus.style.color = 'var(--green)';
+  }
+
+  roomWS.send(JSON.stringify({ type: 'toggle_mic', enabled: !isMuted }));
+}
+
+function toggleCamera() {
+  isCameraOff = !isCameraOff;
+  if (localStream) {
+    localStream.getVideoTracks().forEach(t => t.enabled = !isCameraOff);
+  }
+  const btn = document.getElementById('cameraBtn');
+  const icon = document.getElementById('cameraIcon');
+  const selfPlaceholder = document.getElementById('selfPlaceholder');
+  const localVideo = document.getElementById('localVideo');
+  const selfVidStatus = document.getElementById('selfVidStatus');
+
+  if (isCameraOff) {
+    btn.classList.add('muted-state');
+    icon.className = 'fa-solid fa-video-slash';
+    selfPlaceholder.style.display = 'flex';
+    localVideo.style.display = 'none';
+    selfVidStatus.className = 'fa-solid fa-video-slash';
+    selfVidStatus.style.color = 'var(--red)';
+  } else {
+    btn.classList.remove('muted-state');
+    icon.className = 'fa-solid fa-video';
+    selfPlaceholder.style.display = 'none';
+    localVideo.style.display = 'block';
+    selfVidStatus.className = 'fa-solid fa-video';
+    selfVidStatus.style.color = 'var(--green)';
+  }
+
+  roomWS.send(JSON.stringify({ type: 'toggle_video', enabled: !isCameraOff }));
+}
+
+async function toggleScreenShare() {
+  if (!isScreenSharing) {
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      isScreenSharing = true;
+
+      const screenTrack = screenStream.getVideoTracks()[0];
+      Object.values(peerConnections).forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) sender.replaceTrack(screenTrack);
+      });
+
+      document.getElementById('localVideo').srcObject = screenStream;
+      document.getElementById('selfPlaceholder').style.display = 'none';
+      document.getElementById('screenBtn').classList.add('active');
+      document.getElementById('screenIcon').className = 'fa-solid fa-desktop-arrow-up';
+      document.getElementById('screenShareBanner').style.display = 'flex';
+
+      screenTrack.onended = () => stopScreenShare();
+      roomWS.send(JSON.stringify({ type: 'screen_share', sharing: true }));
+      showToast('Screen sharing started', 'success');
+    } catch(e) {
+      showToast('Screen share cancelled', 'info');
+    }
+  } else {
+    stopScreenShare();
+  }
+}
+
+function stopScreenShare() {
+  if (!isScreenSharing) return;
+  isScreenSharing = false;
+
+  if (screenStream) {
+    screenStream.getTracks().forEach(t => t.stop());
+    screenStream = null;
+  }
+
+  // Restore camera
+  if (localStream) {
+    const camTrack = localStream.getVideoTracks()[0];
+    if (camTrack) {
+      Object.values(peerConnections).forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) sender.replaceTrack(camTrack);
+      });
+    }
+    document.getElementById('localVideo').srcObject = localStream;
+  }
+
+  document.getElementById('screenBtn').classList.remove('active');
+  document.getElementById('screenIcon').className = 'fa-solid fa-desktop';
+  document.getElementById('screenShareBanner').style.display = 'none';
+  roomWS.send(JSON.stringify({ type: 'screen_share', sharing: false }));
+}
+
+function toggleHand() {
+  isHandRaised = !isHandRaised;
+  const btn = document.getElementById('handBtn');
+  const icon = document.getElementById('handIcon');
+  if (isHandRaised) {
+    btn.classList.add('active');
+    icon.className = 'fa-solid fa-hand';
+    showToast('Hand raised ✋', 'info');
+  } else {
+    btn.classList.remove('active');
+    icon.className = 'fa-solid fa-hand';
+  }
+  roomWS.send(JSON.stringify({ type: 'raise_hand', raised: isHandRaised }));
+}
+
+function forceLocalMute() {
+  if (!isMuted) toggleMic();
+  showToast('You have been muted by the host', 'info');
+}
+
+// ── Reactions ────────────────────────────────────────────
+function toggleReactions() {
+  const bar = document.getElementById('reactionsBar');
+  bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+}
+
+function sendReaction(emoji) {
+  roomWS.send(JSON.stringify({ type: 'reaction', emoji }));
+  showReactionBubble(CURRENT_USER.id, emoji);
+  document.getElementById('reactionsBar').style.display = 'none';
+}
+
+function showReactionBubble(userId, emoji) {
+  const tile = document.getElementById(`tile-${userId}`) || document.getElementById('selfTile');
+  if (!tile) return;
+  const bubble = document.createElement('div');
+  bubble.className = 'reaction-bubble';
+  bubble.textContent = emoji;
+  tile.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 2000);
+}
+
+// ── Chat ─────────────────────────────────────────────────
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content) return;
+  chatWS.send(JSON.stringify({ type: 'message', content, reply_to: replyToId }));
+  input.value = '';
+  replyToId = null;
+  document.getElementById('replyPreview').style.display = 'none';
+  input.style.height = 'auto';
+}
+
+function appendChatMessage(msg) {
+  const container = document.getElementById('chatMessages');
+  const isSelf = msg.sender_id === CURRENT_USER.id;
+
+  // Remove empty state
+  const emptyState = container.querySelector('[style*="text-align:center"]');
+  if (emptyState) emptyState.remove();
+
+  const div = document.createElement('div');
+  div.className = `chat-msg ${isSelf ? 'self' : ''}`;
+  div.id = `msg-${msg.id}`;
+
+  div.innerHTML = `
+    <div class="lsf-avatar" style="background:linear-gradient(135deg,var(--indigo),var(--purple));width:28px;height:28px;font-size:11px;flex-shrink:0;">${msg.sender_initials || '?'}</div>
+    <div>
+      ${!isSelf ? `<div class="chat-sender">${msg.sender_name}</div>` : ''}
+      <div class="chat-bubble">${escapeHtml(msg.content)}</div>
+      <div class="chat-meta">${msg.timestamp}</div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTypingIndicator(username, isTyping) {
+  const el = document.getElementById('typingIndicator');
+  if (isTyping) {
+    el.textContent = `${username} is typing…`;
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => el.textContent = '', 3000);
+  } else {
+    el.textContent = '';
+  }
+}
+
+// Auto-resize chat textarea + typing signal
+document.getElementById('chatInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = this.scrollHeight + 'px';
+  chatWS.send(JSON.stringify({ type: 'typing', is_typing: true }));
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    chatWS.send(JSON.stringify({ type: 'typing', is_typing: false }));
+  }, 2000);
+});
+
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+function toggleEmojis() {
+  const picker = document.getElementById('emojiPicker');
+  picker.style.display = picker.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function insertEmoji(e) {
+  const input = document.getElementById('chatInput');
+  input.value += e;
+  input.focus();
+}
+
+// ── Video Grid ───────────────────────────────────────────
+function addVideoTile(userId, username, initials) {
+  const grid = document.getElementById('videoGrid');
+  const tile = document.createElement('div');
+  tile.className = 'video-tile';
+  tile.id = `tile-${userId}`;
+  tile.innerHTML = `
+    <video id="video-${userId}" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;"></video>
+    <div class="video-avatar-placeholder" id="placeholder-${userId}">
+      <div class="video-avatar-circle">${initials}</div>
+      <span style="font-size:13px;color:var(--text-3);">${username}</span>
+    </div>
+    <div class="video-tile-overlay">
+      <span class="video-name">${username}</span>
+      <i class="fa-solid fa-microphone video-mic-icon active" id="mic-${userId}"></i>
+    </div>
+  `;
+  grid.appendChild(tile);
+  updateGridLayout();
+}
+
+function updateRemoteVideo(userId, stream) {
+  const video = document.getElementById(`video-${userId}`);
+  const placeholder = document.getElementById(`placeholder-${userId}`);
+  if (video) {
+    video.srcObject = stream;
+    video.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  }
+}
+
+function handleMediaUpdate(data) {
+  const { user_id, mic, video } = data;
+  if (mic !== null && mic !== undefined) {
+    const icon = document.getElementById(`mic-${user_id}`);
+    if (icon) {
+      icon.className = mic
+        ? 'fa-solid fa-microphone video-mic-icon active'
+        : 'fa-solid fa-microphone-slash video-mic-icon muted';
+    }
+  }
+  if (video !== null && video !== undefined) {
+    const videoEl = document.getElementById(`video-${user_id}`);
+    const placeholder = document.getElementById(`placeholder-${user_id}`);
+    if (videoEl) videoEl.style.display = video ? 'block' : 'none';
+    if (placeholder) placeholder.style.display = video ? 'none' : 'flex';
+  }
+}
+
+function handleRemoteScreenShare(data) {
+  const banner = document.getElementById('screenShareBanner');
+  const text = document.getElementById('screenShareText');
+  if (data.sharing) {
+    text.textContent = `${data.username} is sharing their screen`;
+    banner.style.display = 'flex';
+    document.getElementById('stopShareBtn') && (document.getElementById('stopShareBtn').style.display = 'none');
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function handleHandRaised(data) {
+  if (data.raised) {
+    showToast(`✋ ${data.username} raised their hand`);
+  }
+}
+
+function updateGridLayout() {
+  const grid = document.getElementById('videoGrid');
+  const count = grid.children.length;
+  grid.className = 'video-grid';
+  if (count <= 1)       grid.classList.add('layout-1');
+  else if (count <= 2)  grid.classList.add('layout-2');
+  else if (count <= 4)  grid.classList.add('layout-4');
+  else if (count <= 6)  grid.classList.add('layout-6');
+  else if (count <= 9)  grid.classList.add('layout-9');
+  else                  grid.classList.add('layout-16');
+}
+
+// ── Participants ──────────────────────────────────────────
+function addParticipantToList(data) {
+  const list = document.getElementById('participantsList');
+  const item = document.createElement('div');
+  item.className = 'participant-item';
+  item.id = `p-${data.user_id}`;
+  item.innerHTML = `
+    <div class="lsf-avatar" style="background:linear-gradient(135deg,var(--indigo),var(--purple));">${data.initials}</div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-1);">${data.username}</div>
+      <div style="font-size:11px;color:var(--text-3);">Attendee</div>
+    </div>
+    ${IS_HOST ? `<div class="p-controls">
+      <button class="p-btn" title="Mute" onclick="muteUser('${data.user_id}')"><i class="fa-solid fa-microphone-slash"></i></button>
+      <button class="p-btn" title="Remove" onclick="kickUser('${data.user_id}')"><i class="fa-solid fa-xmark"></i></button>
+    </div>` : ''}
+  `;
+  list.appendChild(item);
+  updateParticipantCount();
+}
+
+function updateParticipantCount() {
+  const count = document.getElementById('participantsList').children.length;
+  document.getElementById('pCount').textContent = count;
+}
+
+function muteUser(userId) {
+  roomWS.send(JSON.stringify({ type: 'mute_user', target_id: userId }));
+}
+
+function kickUser(userId) {
+  if (confirm('Remove this participant?')) {
+    roomWS.send(JSON.stringify({ type: 'kick_user', target_id: userId }));
+  }
+}
+
+function muteAll() {
+  Object.keys(peerConnections).forEach(id => muteUser(id));
+  showToast('All participants muted', 'success');
+}
+
+// ── Sidebar / Panels ──────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+
+  if (tab === 'chat') {
+    unreadCount = 0;
+    updateUnreadBadge();
+  }
+}
+
+function togglePanel(panel) {
+  const sidebar = document.getElementById('roomSidebar');
+  if (!sidebarOpen) {
+    sidebarOpen = true;
+    sidebar.classList.remove('hidden');
+    switchTab(panel);
+  } else if (activeTab === panel) {
+    sidebarOpen = false;
+    sidebar.classList.add('hidden');
+  } else {
+    switchTab(panel);
+  }
+}
+
+function updateUnreadBadge() {
+  const badge = document.getElementById('unreadBadge');
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Polls ─────────────────────────────────────────────────
+function showCreatePoll() { document.getElementById('pollModal').style.display = 'flex'; }
+function closePollModal() { document.getElementById('pollModal').style.display = 'none'; }
+
+function addPollOption() {
+  const count = document.getElementById('pollOptionsList').children.length + 1;
+  const input = document.createElement('input');
+  input.className = 'lsf-input';
+  input.type = 'text';
+  input.placeholder = `Option ${count}`;
+  document.getElementById('pollOptionsList').appendChild(input);
+}
+
+function launchPoll() {
+  const question = document.getElementById('pollQuestion').value.trim();
+  const options = [...document.querySelectorAll('#pollOptionsList input')].map(i => i.value.trim()).filter(Boolean);
+  if (!question || options.length < 2) {
+    showToast('Add a question and at least 2 options', 'error');
+    return;
+  }
+  const poll = { id: Date.now(), question, options, votes: {}, launched_by: CURRENT_USER.name };
+  roomWS.send(JSON.stringify({ type: 'poll', poll }));
+  closePollModal();
+  handlePollReceived(poll);
+}
+
+function handlePollReceived(poll) {
+  const container = document.getElementById('pollsContainer');
+  container.innerHTML = `
+    <div class="lsf-card" style="padding:16px;">
+      <div style="font-weight:600;color:var(--text-1);margin-bottom:12px;font-size:14px;">${escapeHtml(poll.question)}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${poll.options.map((opt, i) => `
+          <button onclick="votePoll(${poll.id}, ${i})" style="background:var(--bg-600);border:1px solid var(--border);border-radius:6px;padding:9px 14px;color:var(--text-2);font-size:13px;cursor:pointer;text-align:left;transition:all .15s;" onmouseover="this.style.borderColor='var(--indigo)'" onmouseout="this.style.borderColor='var(--border)'">
+            ${escapeHtml(opt)}
+          </button>
+        `).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text-4);margin-top:8px;">By ${escapeHtml(poll.launched_by)}</div>
+    </div>
+  `;
+  if (!sidebarOpen || activeTab !== 'polls') showToast('📊 New poll launched!', 'info');
+}
+
+function votePoll(pollId, optionIndex) {
+  showToast('Vote recorded ✓', 'success');
+}
+
+// ── Settings ─────────────────────────────────────────────
+function toggleSettings() {
+  const modal = document.getElementById('settingsModal');
+  modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+}
+
+function setBg(type) {
+  document.querySelectorAll('[id^="bg-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById(`bg-${type}`).classList.add('active');
+  if (type === 'blur') showToast('Background blur requires advanced GPU support', 'info');
+}
+
+// ── Host Actions ──────────────────────────────────────────
+function confirmEndMeeting() {
+  if (confirm('End the meeting for everyone?')) {
+    roomWS.send(JSON.stringify({ type: 'end_meeting' }));
+    fetch(`/rooms/${ROOM_CODE}/end/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    }).then(() => { window.location.href = '/dashboard/'; });
+  }
+}
+
+// ── Leave ─────────────────────────────────────────────────
+function leaveRoom() {
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+  if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+  Object.values(peerConnections).forEach(pc => pc.close());
+  if (roomWS) roomWS.close();
+  if (chatWS) chatWS.close();
+  window.location.href = '/dashboard/';
+}
+
+// ── Timer ─────────────────────────────────────────────────
+function startTimer() {
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('roomTimer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+// ── Utilities ─────────────────────────────────────────────
+function copyCode() {
+  navigator.clipboard.writeText('{{ room.code }}');
+  showToast('Meeting code copied!', 'success');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return m ? m[2] : '';
+}
+
+// Prevent accidentally closing tab
+window.addEventListener('beforeunload', e => {
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+// Cleanup on unload
+window.addEventListener('unload', leaveRoom);
+
+// Hide main layout overflow
+document.querySelector('.lsf-app') && (document.querySelector('.lsf-app').style.display = 'none');
+
+// Start!
+init();
+</script>
+{% endblock %}

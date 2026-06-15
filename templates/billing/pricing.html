@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+{% block title %}Pricing — LiveStream Felix{% endblock %}
+
+{% block extra_css %}
+.pricing-hero {
+  text-align: center;
+  padding: 40px 0 48px;
+}
+.pricing-title {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.pricing-title span {
+  background: linear-gradient(135deg, var(--indigo), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.pricing-sub {
+  font-size: 17px;
+  color: var(--text-3);
+  max-width: 520px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+.country-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-700);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+.country-flag { font-size: 20px; }
+.country-select {
+  background: none;
+  border: none;
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+}
+.country-select option { background: var(--bg-700); color: var(--text-1); }
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.plan-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: var(--shadow-lg);
+}
+.plan-card.featured {
+  border-color: var(--indigo);
+  background: linear-gradient(160deg, rgba(91,110,245,0.08) 0%, var(--surface) 60%);
+  box-shadow: 0 0 30px rgba(91,110,245,0.15);
+}
+
+.plan-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--indigo), var(--cyan));
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.plan-icon {
+  width: 48px; height: 48px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  margin-bottom: 14px;
+}
+.plan-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 6px;
+}
+.plan-desc {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.plan-price {
+  margin-bottom: 24px;
+}
+.plan-price-amount {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--text-1);
+  line-height: 1;
+}
+.plan-price-amount.free { color: var(--green); }
+.plan-price-period {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+.plan-currency-note {
+  font-size: 11px;
+  color: var(--text-4);
+  margin-top: 2px;
+}
+
+.plan-features {
+  list-style: none;
+  flex: 1;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.plan-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.plan-feature i {
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.plan-feature.has i { color: var(--green); }
+.plan-feature.no  { opacity: 0.4; }
+.plan-feature.no i { color: var(--text-4); }
+
+.plan-cta {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  transition: all 0.15s;
+}
+.plan-cta.primary {
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-d));
+  color: white;
+  box-shadow: 0 4px 12px rgba(91,110,245,0.35);
+}
+.plan-cta.primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(91,110,245,0.5); }
+.plan-cta.secondary {
+  background: var(--bg-600);
+  color: var(--text-2);
+  border: 1px solid var(--border2);
+}
+.plan-cta.secondary:hover { background: var(--bg-500); color: var(--text-1); }
+.plan-cta.current {
+  background: rgba(34,217,122,0.12);
+  color: var(--green);
+  border: 1px solid rgba(34,217,122,0.3);
+  cursor: default;
+}
+
+.compare-section { max-width: 1000px; margin: 64px auto 0; }
+.compare-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-1);
+  text-align: center;
+  margin-bottom: 32px;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.compare-table th {
+  background: var(--bg-700);
+  padding: 14px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  border-bottom: 2px solid var(--border);
+}
+.compare-table th:first-child { text-align: left; }
+.compare-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+}
+.compare-table td:first-child { text-align: left; color: var(--text-1); font-weight: 500; }
+.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+.check { color: var(--green); }
+.cross { color: var(--text-4); }
+
+.faq-section { max-width: 720px; margin: 64px auto; }
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+}
+.faq-q {
+  font-weight: 600;
+  color: var(--text-1);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+}
+.faq-a {
+  font-size: 14px;
+  color: var(--text-3);
+  line-height: 1.7;
+  margin-top: 10px;
+  display: none;
+}
+.faq-a.open { display: block; }
+
+@media (max-width: 900px) {
+  .plans-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .plans-grid { grid-template-columns: 1fr; }
+  .pricing-title { font-size: 28px; }
+}
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="pricing-hero">
+  <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(91,110,245,0.12);border:1px solid rgba(91,110,245,0.3);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:700;color:var(--indigo);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:20px;">
+    <i class="fa-solid fa-crown"></i> Simple, Transparent Pricing
+  </div>
+  <h1 class="pricing-title">
+    Choose the plan that's<br><span>right for you</span>
+  </h1>
+  <p class="pricing-sub">
+    Start free, upgrade when you need more. All plans include HD video, real-time chat, and screen sharing.
+  </p>
+
+  <!-- Country Selector -->
+  <div style="margin-bottom:8px;">
+    <div class="country-selector">
+      <span class="country-flag" id="selectedFlag">{{ selected_country.flag_emoji }}</span>
+      <i class="fa-solid fa-globe" style="color:var(--text-3);"></i>
+      <select class="country-select" id="countrySelect" onchange="updatePricing(this.value)">
+        {% for country in countries %}
+        <option value="{{ country.code }}" {% if country.code == selected_country.code %}selected{% endif %}>
+          {{ country.flag_emoji }} {{ country.name }} — {{ country.currency_code }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="font-size:12px;color:var(--text-4);">Prices shown in your local currency</div>
+  </div>
+</div>
+
+<!-- Plan Cards -->
+<div class="plans-grid" id="plansGrid">
+  {% for item in plan_data %}
+  {% with plan=item.plan %}
+  <div class="plan-card {% if plan.is_featured %}featured{% endif %}" id="card-{{ plan.slug }}">
+    {% if plan.is_featured %}
+    <div class="plan-badge">⭐ Most Popular</div>
+    {% endif %}
+
+    <!-- Icon -->
+    <div class="plan-icon" style="background:{% if plan.slug == 'free' %}rgba(107,125,179,0.12){% elif plan.slug == 'starter' %}rgba(0,212,255,0.12){% elif plan.slug == 'pro' %}rgba(91,110,245,0.15){% else %}rgba(168,85,247,0.12){% endif %};color:{% if plan.slug == 'free' %}var(--text-3){% elif plan.slug == 'starter' %}var(--cyan){% elif plan.slug == 'pro' %}var(--indigo){% else %}var(--purple){% endif %};">
+      <i class="fa-solid {% if plan.slug == 'free' %}fa-gift{% elif plan.slug == 'starter' %}fa-rocket{% elif plan.slug == 'pro' %}fa-crown{% else %}fa-building{% endif %}"></i>
+    </div>
+
+    <div class="plan-name">{{ plan.name }}</div>
+    <div class="plan-desc">{{ plan.description }}</div>
+
+    <!-- Price -->
+    <div class="plan-price">
+      <div class="plan-price-amount {% if plan.is_free %}free{% endif %}" id="price-{{ plan.slug }}">
+        {% if plan.is_free %}Free{% else %}{{ item.price_display }}{% endif %}
+      </div>
+      {% if not plan.is_free %}
+      <div class="plan-price-period">per {{ plan.billing_cycle }}</div>
+      <div class="plan-currency-note" id="currency-{{ plan.slug }}">Billed in {{ item.currency }}</div>
+      {% else %}
+      <div class="plan-price-period">forever</div>
+      {% endif %}
+    </div>
+
+    <!-- Features -->
+    <ul class="plan-features">
+      <li class="plan-feature has">
+        <i class="fa-solid fa-check"></i>
+        <span>Up to <strong>{{ plan.max_participants }}</strong> participants</span>
+      </li>
+      <li class="plan-feature has">
+        <i class="fa-solid fa-check"></i>
+        <span>
+          {% if plan.max_meeting_minutes >= 9999 %}Unlimited{% else %}{{ plan.max_meeting_minutes }} min{% endif %} per meeting
+        </span>
+      </li>
+      <li class="plan-feature has">
+        <i class="fa-solid fa-check"></i>
+        <span>
+          {% if plan.max_meetings_per_month >= 9999 %}Unlimited{% else %}{{ plan.max_meetings_per_month }}{% endif %} meetings/month
+        </span>
+      </li>
+      <li class="plan-feature {% if plan.allow_screen_share %}has{% else %}no{% endif %}">
+        <i class="fa-solid {% if plan.allow_screen_share %}fa-check{% else %}fa-xmark{% endif %}"></i>
+        Screen sharing
+      </li>
+      <li class="plan-feature {% if plan.allow_recording %}has{% else %}no{% endif %}">
+        <i class="fa-solid {% if plan.allow_recording %}fa-check{% else %}fa-xmark{% endif %}"></i>
+        Meeting recording
+      </li>
+      <li class="plan-feature {% if plan.allow_polls %}has{% else %}no{% endif %}">
+        <i class="fa-solid {% if plan.allow_polls %}fa-check{% else %}fa-xmark{% endif %}"></i>
+        Live polls
+      </li>
+      <li class="plan-feature {% if plan.allow_whiteboard %}has{% else %}no{% endif %}">
+        <i class="fa-solid {% if plan.allow_whiteboard %}fa-check{% else %}fa-xmark{% endif %}"></i>
+        Whiteboard
+      </li>
+      <li class="plan-feature {% if plan.allow_analytics %}has{% else %}no{% endif %}">
+        <i class="fa-solid {% if plan.allow_analytics %}fa-check{% else %}fa-xmark{% endif %}"></i>
+        Analytics dashboard
+      </li>
+      {% if plan.cloud_storage_gb > 0 %}
+      <li class="plan-feature has">
+        <i class="fa-solid fa-check"></i>
+        {{ plan.cloud_storage_gb }}GB cloud storage
+      </li>
+      {% endif %}
+      {% if plan.allow_custom_branding %}
+      <li class="plan-feature has">
+        <i class="fa-solid fa-check"></i>
+        Custom branding
+      </li>
+      {% endif %}
+    </ul>
+
+    <!-- CTA Button -->
+    {% if item.is_current %}
+      <div class="plan-cta current"><i class="fa-solid fa-check"></i> Current Plan</div>
+    {% elif plan.is_free %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'billing:checkout' plan.slug %}" class="plan-cta secondary">Downgrade to Free</a>
+      {% else %}
+        <a href="{% url 'accounts:register' %}" class="plan-cta secondary">Get Started Free</a>
+      {% endif %}
+    {% else %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'billing:checkout' plan.slug %}?country={{ selected_country.code }}" class="plan-cta {% if plan.is_featured %}primary{% else %}secondary{% endif %}" id="cta-{{ plan.slug }}">
+          <i class="fa-solid fa-bolt"></i>
+          {% if plan.is_featured %}Get Started{% else %}Choose {{ plan.name }}{% endif %}
+        </a>
+      {% else %}
+        <a href="{% url 'accounts:register' %}" class="plan-cta {% if plan.is_featured %}primary{% else %}secondary{% endif %}">
+          Sign Up & Subscribe
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+
+<!-- Trust Badges -->
+<div style="display:flex;justify-content:center;gap:32px;margin-top:48px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3);">
+    <i class="fa-solid fa-shield-halved" style="color:var(--green);font-size:16px;"></i> Secure Flutterwave Payments
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3);">
+    <i class="fa-solid fa-rotate-left" style="color:var(--cyan);font-size:16px;"></i> Cancel Anytime
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3);">
+    <i class="fa-solid fa-headset" style="color:var(--indigo);font-size:16px;"></i> 24/7 Support
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3);">
+    <i class="fa-solid fa-credit-card" style="color:var(--purple);font-size:16px;"></i> Card, Mobile Money & USSD
+  </div>
+</div>
+
+<!-- Comparison Table -->
+<div class="compare-section">
+  <h2 class="compare-title">Full Feature Comparison</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th style="width:40%;">Feature</th>
+        <th>Free</th><th>Starter</th><th>Pro</th><th>Business</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Participants</td><td>2</td><td>10</td><td>50</td><td>100</td></tr>
+      <tr><td>Meeting Duration</td><td>40 min</td><td>2 hrs</td><td>5 hrs</td><td>Unlimited</td></tr>
+      <tr><td>Meetings/Month</td><td>3</td><td>20</td><td>100</td><td>Unlimited</td></tr>
+      <tr><td>HD Video</td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Real-time Chat</td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Screen Sharing</td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Recording</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Live Polls</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Whiteboard</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Analytics</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Cloud Storage</td><td>—</td><td>5 GB</td><td>20 GB</td><td>100 GB</td></tr>
+      <tr><td>Custom Branding</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+      <tr><td>Priority Support</td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-xmark cross"></i></td><td><i class="fa-solid fa-check check"></i></td><td><i class="fa-solid fa-check check"></i></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FAQ -->
+<div class="faq-section">
+  <h2 class="compare-title">Frequently Asked Questions</h2>
+  {% for q,a in faq_items %}
+  <div class="faq-item">
+    <div class="faq-q" onclick="toggleFaq(this)">
+      {{ q }} <i class="fa-solid fa-chevron-down" style="font-size:12px;color:var(--text-3);"></i>
+    </div>
+    <div class="faq-a">{{ a }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+const FLW_PUBLIC_KEY = '{{ flw_public_key }}';
+
+// Country pricing update
+function updatePricing(countryCode) {
+  const select = document.getElementById('countrySelect');
+  const selectedOption = select.options[select.selectedIndex];
+  document.getElementById('selectedFlag').textContent = selectedOption.text.split(' ')[0];
+
+  fetch(`/billing/api/country-pricing/?country=${countryCode}`)
+    .then(r => r.json())
+    .then(data => {
+      data.plans.forEach(p => {
+        const priceEl = document.getElementById(`price-${p.slug}`);
+        const currEl = document.getElementById(`currency-${p.slug}`);
+        const ctaEl = document.getElementById(`cta-${p.slug}`);
+
+        if (priceEl && p.slug !== 'free') {
+          priceEl.textContent = p.display;
+        }
+        if (currEl) {
+          currEl.textContent = `Billed in ${p.currency}`;
+        }
+        if (ctaEl) {
+          const href = ctaEl.href.replace(/country=\w+/, `country=${countryCode}`);
+          ctaEl.href = href.includes('country=') ? href : href + `?country=${countryCode}`;
+        }
+      });
+
+      // Update page URL without reload
+      const url = new URL(window.location);
+      url.searchParams.set('country', countryCode);
+      window.history.pushState({}, '', url);
+    })
+    .catch(err => console.log('Pricing fetch error:', err));
+}
+
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  const icon = el.querySelector('i');
+  answer.classList.toggle('open');
+  icon.style.transform = answer.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+</script>
+{% endblock %}

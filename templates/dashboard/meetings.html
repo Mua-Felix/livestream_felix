@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Meetings — LiveStream Felix{% endblock %}
+
+{% block content %}
+<div class="lsf-page-header">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1 class="lsf-page-title">Meetings</h1>
+      <p class="lsf-page-sub">All your past and upcoming meetings</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="{% url 'rooms:instant' %}" class="lsf-btn lsf-btn-primary"><i class="fa-solid fa-bolt"></i> New Meeting</a>
+      <a href="{% url 'rooms:create' %}" class="lsf-btn lsf-btn-secondary"><i class="fa-solid fa-calendar-plus"></i> Schedule</a>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Tabs -->
+<div style="display:flex;gap:4px;margin-bottom:24px;background:var(--bg-800);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;width:fit-content;">
+  {% for label, slug in filter_options %}
+  <a href="?filter={{ slug }}" class="lsf-btn {% if filter_type == slug %}lsf-btn-primary{% else %}lsf-btn-secondary{% endif %} lsf-btn-sm" style="border:none;">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if rooms %}
+<div style="display:flex;flex-direction:column;gap:10px;">
+  {% for room in rooms %}
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div class="lsf-meeting-icon" style="background:{% if room.status == 'active' %}rgba(34,217,122,0.12){% elif room.status == 'waiting' %}rgba(91,110,245,0.12){% else %}rgba(107,125,179,0.1){% endif %};color:{% if room.status == 'active' %}var(--green){% elif room.status == 'waiting' %}var(--indigo){% else %}var(--text-3){% endif %};">
+      <i class="fa-solid {% if room.status == 'active' %}fa-circle-dot{% elif room.status == 'waiting' %}fa-calendar{% else %}fa-history{% endif %}"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:4px;">{{ room.title }}</div>
+      <div style="font-size:12px;color:var(--text-3);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span><i class="fa-solid fa-code" style="margin-right:4px;"></i>{{ room.code }}</span>
+        <span><i class="fa-solid fa-users" style="margin-right:4px;"></i>{{ room.participant_count }} participants</span>
+        {% if room.duration_minutes %}<span><i class="fa-solid fa-clock" style="margin-right:4px;"></i>{{ room.duration_minutes }} min</span>{% endif %}
+        <span><i class="fa-solid fa-calendar" style="margin-right:4px;"></i>{{ room.created_at|date:"M d, Y" }}</span>
+        {% if room.host == user %}<span style="color:var(--cyan);"><i class="fa-solid fa-crown" style="margin-right:4px;"></i>You hosted</span>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="lsf-status lsf-status-{{ room.status }}">{{ room.get_status_display }}</span>
+      {% if room.status == 'active' %}
+      <a href="{% url 'rooms:room' room.code %}" class="lsf-btn lsf-btn-primary lsf-btn-sm"><i class="fa-solid fa-right-to-bracket"></i> Rejoin</a>
+      {% elif room.status == 'waiting' and room.host == user %}
+      <a href="{% url 'rooms:room' room.code %}" class="lsf-btn lsf-btn-secondary lsf-btn-sm"><i class="fa-solid fa-play"></i> Start</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:80px 20px;color:var(--text-3);">
+  <i class="fa-solid fa-calendar-xmark" style="font-size:48px;display:block;margin-bottom:16px;opacity:0.3;"></i>
+  <div style="font-size:18px;font-weight:600;color:var(--text-2);margin-bottom:8px;">No meetings found</div>
+  <p style="margin-bottom:24px;">Get started by creating your first meeting</p>
+  <a href="{% url 'rooms:instant' %}" class="lsf-btn lsf-btn-primary lsf-btn-lg"><i class="fa-solid fa-video"></i> Start a Meeting</a>
+</div>
+{% endif %}
+{% endblock %}

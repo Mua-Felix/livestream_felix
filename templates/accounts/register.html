@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Create Account — LiveStream Felix{% endblock %}
+
+{% block auth_content %}
+<style>
+  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: var(--bg-900); }
+  .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 48px; width: 100%; max-width: 560px; }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="/" class="lsf-logo" style="justify-content:center;padding:0;border:none;margin-bottom:20px;">
+        <div class="lsf-logo-icon"><i class="fa-solid fa-video"></i></div>
+        <div class="lsf-logo-text">LiveStream Felix<span>Professional Video Platform</span></div>
+      </a>
+      <h3 style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text-1);margin-bottom:6px;">Create your account</h3>
+      <p style="color:var(--text-3);font-size:14px;">Join thousands of professionals on LiveStream Felix</p>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="lsf-grid-2">
+        <div class="lsf-form-group">
+          <label class="lsf-label">First Name</label>
+          <input class="lsf-input" type="text" name="first_name" placeholder="John" value="{{ form.first_name.value|default:'' }}" required>
+          {% if form.first_name.errors %}<div class="lsf-form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="lsf-form-group">
+          <label class="lsf-label">Last Name</label>
+          <input class="lsf-input" type="text" name="last_name" placeholder="Doe" value="{{ form.last_name.value|default:'' }}" required>
+        </div>
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Email Address</label>
+        <input class="lsf-input" type="email" name="email" placeholder="john@company.com" value="{{ form.email.value|default:'' }}" required>
+        {% if form.email.errors %}<div class="lsf-form-error">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Username</label>
+        <input class="lsf-input" type="text" name="username" placeholder="john_doe" value="{{ form.username.value|default:'' }}" required>
+        {% if form.username.errors %}<div class="lsf-form-error">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+      <div class="lsf-grid-2">
+        <div class="lsf-form-group">
+          <label class="lsf-label">Job Title <span style="color:var(--text-4);">(optional)</span></label>
+          <input class="lsf-input" type="text" name="job_title" placeholder="Software Engineer" value="{{ form.job_title.value|default:'' }}">
+        </div>
+        <div class="lsf-form-group">
+          <label class="lsf-label">Organization <span style="color:var(--text-4);">(optional)</span></label>
+          <input class="lsf-input" type="text" name="organization" placeholder="Acme Corp" value="{{ form.organization.value|default:'' }}">
+        </div>
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Your Country <span style="color:var(--text-4);">(sets your currency)</span></label>
+        <select class="lsf-input" name="country_code" style="cursor:pointer;">
+          {% for country in countries %}
+          <option value="{{ country.code }}">{{ country.flag_emoji }} {{ country.name }} — {{ country.currency_code }}</option>
+          {% empty %}
+          <option value="NG">🇳🇬 Nigeria — NGN</option>
+          <option value="GH">🇬🇭 Ghana — GHS</option>
+          <option value="KE">🇰🇪 Kenya — KES</option>
+          <option value="ZA">🇿🇦 South Africa — ZAR</option>
+          <option value="US">🇺🇸 United States — USD</option>
+          <option value="GB">🇬🇧 United Kingdom — GBP</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="lsf-grid-2">
+        <div class="lsf-form-group">
+          <label class="lsf-label">Password</label>
+          <input class="lsf-input" type="password" name="password1" required>
+          {% if form.password1.errors %}<div class="lsf-form-error">{{ form.password1.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="lsf-form-group">
+          <label class="lsf-label">Confirm Password</label>
+          <input class="lsf-input" type="password" name="password2" required>
+          {% if form.password2.errors %}<div class="lsf-form-error">{{ form.password2.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+      <button type="submit" class="lsf-btn lsf-btn-primary lsf-btn-full lsf-btn-lg" style="margin-top:8px;">
+        <i class="fa-solid fa-user-plus"></i> Create Account
+      </button>
+    </form>
+
+    <div style="margin-top:24px;text-align:center;">
+      <p style="color:var(--text-3);font-size:14px;">
+        Already have an account?
+        <a href="{% url 'accounts:login' %}" style="color:var(--indigo);font-weight:600;text-decoration:none;">Sign In</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

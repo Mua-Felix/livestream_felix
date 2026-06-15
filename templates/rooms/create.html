@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Schedule Meeting — LiveStream Felix{% endblock %}
+
+{% block content %}
+<div class="lsf-page-header">
+  <h1 class="lsf-page-title">Schedule a Meeting</h1>
+  <p class="lsf-page-sub">Set up a new meeting with custom settings</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:24px;max-width:1100px;">
+  <div class="lsf-card">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="lsf-form-group">
+        <label class="lsf-label">Meeting Title *</label>
+        <input class="lsf-input" type="text" name="title" placeholder="Weekly Team Sync" required>
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Description</label>
+        <textarea class="lsf-input" name="description" placeholder="What's this meeting about?" style="min-height:80px;resize:vertical;"></textarea>
+      </div>
+      <div class="lsf-grid-2">
+        <div class="lsf-form-group">
+          <label class="lsf-label">Meeting Type</label>
+          <select class="lsf-input" name="room_type">
+            <option value="scheduled">Scheduled</option>
+            <option value="instant">Instant</option>
+            <option value="personal">Personal Room</option>
+            <option value="webinar">Webinar</option>
+          </select>
+        </div>
+        <div class="lsf-form-group">
+          <label class="lsf-label">Max Participants</label>
+          <input class="lsf-input" type="number" name="max_participants" value="100" min="2" max="500">
+        </div>
+      </div>
+      <div class="lsf-grid-2">
+        <div class="lsf-form-group">
+          <label class="lsf-label">Start Date & Time</label>
+          <input class="lsf-input" type="datetime-local" name="scheduled_start">
+        </div>
+        <div class="lsf-form-group">
+          <label class="lsf-label">End Date & Time</label>
+          <input class="lsf-input" type="datetime-local" name="scheduled_end">
+        </div>
+      </div>
+      <div class="lsf-form-group">
+        <label class="lsf-label">Meeting Password <span style="color:var(--text-4);">(optional)</span></label>
+        <input class="lsf-input" type="text" name="password" placeholder="Leave blank for no password" maxlength="50">
+      </div>
+
+      <hr class="lsf-divider">
+      <div style="font-size:13px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;">Security & Options</div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        {% for label, name in settings_fields %}
+        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-1);">{{ label }}</div>
+          </div>
+          <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+            <input type="checkbox" name="{{ name }}" style="opacity:0;position:absolute;width:0;height:0;" id="toggle-{{ name }}">
+            <label for="toggle-{{ name }}" style="position:absolute;inset:0;background:var(--bg-500);border-radius:12px;cursor:pointer;transition:background .2s;border:1px solid var(--border2);">
+              <span style="position:absolute;left:3px;top:3px;width:16px;height:16px;background:var(--text-3);border-radius:50%;transition:transform .2s;display:block;" class="toggle-dot"></span>
+            </label>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:24px;">
+        <button type="submit" class="lsf-btn lsf-btn-primary lsf-btn-lg" style="flex:1;">
+          <i class="fa-solid fa-calendar-check"></i> Schedule Meeting
+        </button>
+        <a href="{% url 'dashboard:home' %}" class="lsf-btn lsf-btn-secondary lsf-btn-lg">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tips sidebar -->
+  <div>
+    <div class="lsf-card lsf-mb-16">
+      <div class="lsf-card-title lsf-mb-16"><i class="fa-solid fa-lightbulb" style="color:var(--yellow);margin-right:8px;"></i>Quick Tips</div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;color:var(--text-3);">
+        <div style="display:flex;gap:10px;"><i class="fa-solid fa-check" style="color:var(--green);flex-shrink:0;margin-top:2px;"></i>Use a password for sensitive meetings</div>
+        <div style="display:flex;gap:10px;"><i class="fa-solid fa-check" style="color:var(--green);flex-shrink:0;margin-top:2px;"></i>Enable waiting room to control entry</div>
+        <div style="display:flex;gap:10px;"><i class="fa-solid fa-check" style="color:var(--green);flex-shrink:0;margin-top:2px;"></i>Mute on entry reduces background noise</div>
+        <div style="display:flex;gap:10px;"><i class="fa-solid fa-check" style="color:var(--green);flex-shrink:0;margin-top:2px;"></i>Share the meeting code before the call</div>
+      </div>
+    </div>
+    <div class="lsf-card">
+      <div class="lsf-card-title lsf-mb-16"><i class="fa-solid fa-bolt" style="color:var(--cyan);margin-right:8px;"></i>Instant Meeting</div>
+      <p style="font-size:13px;color:var(--text-3);margin-bottom:16px;">Don't need scheduling? Start a meeting right now.</p>
+      <a href="{% url 'rooms:instant' %}" class="lsf-btn lsf-btn-cyan lsf-btn-full">
+        <i class="fa-solid fa-video"></i> Start Now
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  input[type=checkbox]:checked + label { background: var(--indigo) !important; border-color: var(--indigo) !important; }
+  input[type=checkbox]:checked + label .toggle-dot { transform: translateX(20px); background: white !important; }
+</style>
+{% endblock %}
